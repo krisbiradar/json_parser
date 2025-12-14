@@ -1,0 +1,10 @@
+[package]
+name = "json_parser"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+
+[[bin]]
+name = "json_parser"
+path = "src/main.rs"

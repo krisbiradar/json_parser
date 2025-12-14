@@ -1,0 +1,20 @@
+use crate::core::tokentype::TokenType;
+pub struct TokenTypeRelationShips;
+
+impl TokenTypeRelationShips {
+const TOKENTYPE_RELATIONSHIPS : [&[TokenType];13] = [
+    &[TokenType::Comma,TokenType::EOF,TokenType::RightSquareBracket],
+    &[TokenType::DoubleQuote],
+    &[TokenType::Comma, TokenType::RightSquareBracket,TokenType::RightBrace,TokenType::LeftSquareBracket],
+    &[TokenType::Number , TokenType::Boolean, TokenType::LeftSquareBracket,TokenType::Null, TokenType::DoubleQuote,TokenType::LeftBrace,TokenType::RightSquareBracket],
+    &[TokenType::Comma,TokenType::Number,TokenType::Point, TokenType::RightBrace, TokenType::RightSquareBracket],
+    &[TokenType::Number , TokenType::Boolean, TokenType::LeftSquareBracket,TokenType::Null, TokenType::DoubleQuote,TokenType::LeftBrace],
+    &[TokenType::Text,TokenType::DoubleQuote],
+    &[TokenType::Comma,TokenType::RightBrace, TokenType::RightSquareBracket],
+    &[TokenType::Comma,TokenType::RightBrace, TokenType::RightSquareBracket],
+    &[TokenType::Number , TokenType::Boolean, TokenType::Null,TokenType::DoubleQuote, TokenType::LeftBrace, TokenType::LeftSquareBracket],
+    &[TokenType::DoubleQuote,TokenType::Comma, TokenType::RightSquareBracket, TokenType::RightBrace,TokenType::Text],
+    &[],
+    &[TokenType::Number]
+];
+}
