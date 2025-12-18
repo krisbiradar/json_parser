@@ -1,4 +1,5 @@
 use std::fs;
+use create::token::Token;
 pub struct Lexer {
     current_pos:usize;
     current_token:Token;
@@ -18,7 +19,7 @@ impl Lexer {
 
     fn from_file(json_file_path:String){
 
-        return Self {
+        return Self 
             json_file_path,
             json_text:fs::read_to_string(),
             current_pos:0,
@@ -27,14 +28,14 @@ impl Lexer {
     }
 
     fn next_token(& mut Self){
-        if(Self.current_pos > 1 && Self.current_pos < json_text.len()){
-            Self.current_token
+        if !matches!(self.current_token , None){
+            move_forward(& mut self);
+            current_token = Token::new()
         }
     }
 
     fn move_forward(& mut Self){
         Self.current_pos+=1;
-
     }
 
 }
