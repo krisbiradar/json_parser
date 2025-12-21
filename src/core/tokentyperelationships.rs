@@ -2,7 +2,7 @@ use crate::core::tokentype::TokenType;
 pub struct TokenTypeRelationShips;
 
 impl TokenTypeRelationShips {
-    const TOKENTYPE_RELATIONSHIPS: [&[TokenType]; 13] = [
+    const TOKENTYPE_RELATIONSHIPS: [&[TokenType]; 14] = [
         &[
             TokenType::Comma,
             TokenType::EOF,
@@ -67,5 +67,6 @@ impl TokenTypeRelationShips {
         ],
         &[],
         &[TokenType::Number],
+        &[TokenType::Number]
     ];
 }

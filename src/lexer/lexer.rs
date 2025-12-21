@@ -1,41 +1,32 @@
-use std::fs;
-use create::token::Token;
+use crate::core;
+use std::{
+    path::{Path, PathBuf},
+};
 pub struct Lexer {
-    current_pos:usize;
-    current_token:Token;
-    json_text:String;
-    json_text_bytes:Vec<u8>;
-    json_file_path:String;
+    json_string: Option<String>,
+    file_path: Option<PathBuf>,
 }
 
 impl Lexer {
-    fn new(json_text:String) -> Self {
-        return Self {
-            json_text_bytes: json_text.as_bytes().to_vec(),
-            json_text,
-            current_pos:0
+    pub fn new(json_string: Option<String>, file_path: Option<String>) -> Self {
+        match (json_string, file_path) {
+            (Some(str), Some(path)) => {
+                panic!("both json_string and file_path are supplied choose one");
+            }
+            (Some(str), None) => {
+
+            }
+            (None, Some(path))=>{
+                let path = Path::new(&path);
+                if(!path.exists()){
+                    panic!("the file_path : {} doesnt exist", &path);
+                } else {
+                        
+                }
+            }
+            (None , None) => {
+                panic!("neither json_string nor file_path was provided‘");
+            }
         }
     }
-
-    fn from_file(json_file_path:String){
-
-        return Self 
-            json_file_path,
-            json_text:fs::read_to_string(),
-            current_pos:0,
-            json_text_bytes : json_text.as_bytes().to_vec()
-        }
-    }
-
-    fn next_token(& mut Self){
-        if !matches!(self.current_token , None){
-            move_forward(& mut self);
-            current_token = Token::new()
-        }
-    }
-
-    fn move_forward(& mut Self){
-        Self.current_pos+=1;
-    }
-
 }
