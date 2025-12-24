@@ -2,7 +2,7 @@ use crate::lexer::{byte_reader::ByteReader, constants};
 use memchr::memchr;
 use std::{
     fs::File,
-    io::{BufRead, BufReader, Read, Seek},
+    io::{BufRead, BufReader},
     path::{Path, PathBuf},
 };
 
@@ -24,7 +24,7 @@ impl BufferedFileReader {
             Self {
                 path: path,
                 offset: 0,
-                chunk_size: constants::default_chunk_size_file,
+                chunk_size: constants::DEFAULT_CHUNK_SIZE_FILE,
                 reader: None,
             }
         }

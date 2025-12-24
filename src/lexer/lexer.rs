@@ -1,10 +1,7 @@
-use crate::{
-    
-    lexer::{
-        buffered_file_reader::BufferedFileReader, buffered_string_reader::BufferedStringReader,
-    },
+use crate::lexer::{
+    buffered_file_reader::BufferedFileReader, buffered_string_reader::BufferedStringReader,
 };
-use std::path::{Path, PathBuf};
+use std::path::{Path};
 pub struct Lexer {
     buffered_file_reader: Option<BufferedFileReader>,
     buffered_string_reader: Option<BufferedStringReader>,
@@ -13,8 +10,8 @@ pub struct Lexer {
 impl Lexer {
     pub fn new(json_string: Option<String>, file_path: Option<String>) -> Self {
         match (json_string, file_path) {
-            (Some(str), Some(path)) => {
-                panic!("both json_string and file_path are supplied choose one");
+            (Some(_str), Some(_path)) => {
+                panic!("both json_string and file_path are supplied! choose one...");
             }
             (Some(str), None) => Self {
                 buffered_string_reader: Some(BufferedStringReader::new(str.as_bytes().to_vec())),

@@ -1,5 +1,3 @@
-use std::io::Cursor;
-
 use crate::lexer::{byte_reader::ByteReader, constants};
 use memchr::memchr;
 
@@ -13,7 +11,7 @@ impl BufferedStringReader {
     pub fn new(value: Vec<u8>) -> Self {
         Self {
             value: value,
-            chunk_size: constants::default_chunk_size_file,
+            chunk_size: constants::DEFAULT_CHUNK_SIZE_TEXT,
             offset: 0,
         }
     }

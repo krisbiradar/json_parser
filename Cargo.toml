@@ -6,6 +6,6 @@ edition = "2024"
 [dependencies]
 memchr = "2"
 
-[[bin]]
-name = "json_parser"
-path = "src/main.rs"
+[lib]
+path = "./src/lib.rs"
+

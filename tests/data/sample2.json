@@ -1,0 +1,112 @@
+[
+        {
+            "flight_number": "DL8509",
+            "airline_name": "Delta Air Lines",
+            "departure_airport": "John F. Kennedy International",
+            "departure_city": "New York",
+            "departure_country": "USA",
+            "departure_time": "4:02 PM",
+            "arrival_airport": "Hartsfield-Jackson Atlanta",
+            "arrival_city": "Atlanta",
+            "duration_hours": 20.95
+        },
+        {
+            "flight_number": "SA3789",
+            "airline_name": "South African Airways",
+            "departure_airport": "O.R. Tambo International",
+            "departure_city": "Johannesburg",
+            "departure_country": "South Africa",
+            "departure_time": "3:02 AM",
+            "arrival_airport": "Charles de Gaulle",
+            "arrival_city": "Paris",
+            "duration_hours": 1.9
+        },
+        {
+            "flight_number": "SA4245",
+            "airline_name": "South African Airways",
+            "departure_airport": "O.R. Tambo International",
+            "departure_city": "Johannesburg",
+            "departure_country": "South Africa",
+            "departure_time": "2:40 PM",
+            "arrival_airport": "Charles de Gaulle",
+            "arrival_city": "Paris",
+            "duration_hours": 20.63
+        },
+        {
+            "flight_number": "SK3298",
+            "airline_name": "SAS Scandinavian",
+            "departure_airport": "Copenhagen Airport",
+            "departure_city": "Copenhagen",
+            "departure_country": "Denmark",
+            "departure_time": "3:18 PM",
+            "arrival_airport": "Charles de Gaulle",
+            "arrival_city": "Paris",
+            "duration_hours": 17.08
+        },
+        {
+            "flight_number": "KL5073",
+            "airline_name": "KLM Royal Dutch Airlines",
+            "departure_airport": "Amsterdam Airport Schiphol",
+            "departure_city": "Amsterdam",
+            "departure_country": "Netherlands",
+            "departure_time": "12:54 AM",
+            "arrival_airport": "Benito Juárez International",
+            "arrival_city": "Mexico City",
+            "duration_hours": 5.41
+        },
+        {
+            "flight_number": "SK3846",
+            "airline_name": "SAS Scandinavian",
+            "departure_airport": "Copenhagen Airport",
+            "departure_city": "Copenhagen",
+            "departure_country": "Denmark",
+            "departure_time": "2:28 AM",
+            "arrival_airport": "Charles de Gaulle",
+            "arrival_city": "Paris",
+            "duration_hours": 11.7
+        },
+        {
+            "flight_number": "ET3617",
+            "airline_name": "Ethiopian Airlines",
+            "departure_airport": "Bole International",
+            "departure_city": "Addis Ababa",
+            "departure_country": "Ethiopia",
+            "departure_time": "8:52 PM",
+            "arrival_airport": "Hartsfield-Jackson Atlanta",
+            "arrival_city": "Atlanta",
+            "duration_hours": 11.94
+        },
+        {
+            "flight_number": "AI6681",
+            "airline_name": "Air India",
+            "departure_airport": "Indira Gandhi International",
+            "departure_city": "Delhi",
+            "departure_country": "India",
+            "departure_time": "1:21 PM",
+            "arrival_airport": "Chhatrapati Shivaji International",
+            "arrival_city": "Mumbai",
+            "duration_hours": 19.85
+        },
+        {
+            "flight_number": "QF6179",
+            "airline_name": "Qantas",
+            "departure_airport": "Sydney Airport",
+            "departure_city": "Sydney",
+            "departure_country": "Australia",
+            "departure_time": "3:12 PM",
+            "arrival_airport": "Melbourne Airport",
+            "arrival_city": "Melbourne",
+            "duration_hours": 17.53
+        },
+        {
+            "flight_number": "SA9026",
+            "airline_name": "South African Airways",
+            "departure_airport": "O.R. Tambo International",
+            "departure_city": "Johannesburg",
+            "departure_country": "South Africa",
+            "departure_time": "4:29 PM",
+            "arrival_airport": "Charles de Gaulle",
+            "arrival_city": "Paris",
+            "duration_hours": 5.41
+        }
+    ]
