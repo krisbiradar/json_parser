@@ -15,7 +15,9 @@ pub enum TokenType {
     EOF = 11,
     Point = 12,
     MinusSign = 13,
-    Invalid = 14,
+    NewLine = 14,
+    Tab = 15,
+    Invalid = 16,
 }
 
 impl TokenType {
@@ -51,6 +53,8 @@ impl TokenType {
             ',' => TokenType::Comma,
             '-' => TokenType::MinusSign,
             '"' => TokenType::DoubleQuote,
+            '\n' => TokenType::NewLine,
+            '\t' => TokenType::Tab,
             _ => TokenType::Text,
         }
     }
