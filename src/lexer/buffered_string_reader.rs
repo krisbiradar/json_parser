@@ -26,13 +26,15 @@ impl ByteReader for BufferedStringReader {
         if (self.offset == self.value.len() - 1) {
             return Err("The string input has ended".to_string());
         }
+        let res = self.value[self.offset];
         self.offset = self.offset + 1;
-        return Ok(self.value[self.offset]);
+        return Ok(res);
     }
 
     fn next_chunk(&mut self) -> Result<Vec<u8>, String> {
+        let res = self.value[self.offset..(self.offset + self.chunk_size).min(self.value.len())].to_vec();
         self.offset += self.chunk_size.min((self.value.len() - 1) - self.offset);
-        Ok(self.value[self.offset..(self.offset + self.chunk_size).min(self.value.len())].to_vec())
+        Ok(res)
     }
     fn next_until(&mut self, byte: u8) -> Result<Vec<u8>, String> {
         if let Some(pos) = memchr(byte, &self.value[self.offset..]) {

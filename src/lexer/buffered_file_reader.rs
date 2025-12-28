@@ -35,6 +35,11 @@ impl BufferedFileReader {
             File::open(&self.path).expect("Error opening file"),
         ));
     }
+
+    pub fn with_chunk_size(mut self, chunk_size: usize) -> Self {
+        self.chunk_size = chunk_size;
+        self
+    }
 }
 
 impl ByteReader for BufferedFileReader {
@@ -53,6 +58,9 @@ impl ByteReader for BufferedFileReader {
     }
 
     fn next_chunk(&mut self) -> Result<Vec<u8>, String> {
+        if (matches!(self.reader, None)) {
+            self.init_buffer();
+        }
         let reader = self.reader.as_mut().ok_or("reader missing")?;
 
         let mut out = Vec::with_capacity(self.chunk_size);
@@ -84,6 +92,9 @@ impl ByteReader for BufferedFileReader {
     }
 
     fn next_until(&mut self, byte: u8) -> Result<Vec<u8>, String> {
+        if (matches!(self.reader, None)) {
+            self.init_buffer();
+        }
         let mut response_vector: Vec<u8> = Vec::new();
         loop {
             let buff = self.reader.as_mut().unwrap().fill_buf().ok();
@@ -93,7 +104,7 @@ impl ByteReader for BufferedFileReader {
             let n = buff.unwrap().len().min(self.chunk_size);
             let chunk = buff.unwrap()[..n].to_vec();
             if let Some(pos) = memchr(byte, &chunk) {
-                response_vector.extend_from_slice(&chunk[..pos]);
+                response_vector.extend_from_slice(&chunk[..(pos+1).min(chunk.len())]);
                 self.reader.as_mut().unwrap().consume(pos);
                 return Ok(response_vector);
             }
