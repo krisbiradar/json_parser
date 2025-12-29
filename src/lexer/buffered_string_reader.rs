@@ -26,13 +26,18 @@ impl ByteReader for BufferedStringReader {
         if (self.offset == self.value.len() - 1) {
             return Err("The string input has ended".to_string());
         }
-        let res = self.value[self.offset];
+        let mut res = self.value[self.offset];
+        if (res == b' ') {
+            self.skip_white_space();
+        }
+        res = self.value[self.offset];
         self.offset = self.offset + 1;
         return Ok(res);
     }
 
     fn next_chunk(&mut self) -> Result<Vec<u8>, String> {
-        let res = self.value[self.offset..(self.offset + self.chunk_size).min(self.value.len())].to_vec();
+        let res =
+            self.value[self.offset..(self.offset + self.chunk_size).min(self.value.len())].to_vec();
         self.offset += self.chunk_size.min((self.value.len() - 1) - self.offset);
         Ok(res)
     }
@@ -41,6 +46,12 @@ impl ByteReader for BufferedStringReader {
             Ok(self.value[self.offset..pos + 1.min(self.value.len())].to_vec())
         } else {
             Err("the requested byte sequence is not found".to_string())
+        }
+    }
+
+    fn skip_white_space(&mut self) {
+        while (self.value[self.offset] == b' ') {
+            self.offset = self.offset+1;
         }
     }
 }

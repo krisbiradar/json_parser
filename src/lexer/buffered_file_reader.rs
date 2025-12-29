@@ -52,11 +52,18 @@ impl ByteReader for BufferedFileReader {
             return Err("The stream has ended".to_string());
         }
         let b = buff.unwrap()[0];
+        if (b == b' ') {
+            self.skip_white_space();
+            return self.next_byte();
+        }
         self.reader.as_mut().unwrap().consume(1);
         self.offset = self.offset + 1;
+
         return Ok(b);
     }
-
+    fn offset(& mut self) -> usize {
+        return self.offset;
+    }
     fn next_chunk(&mut self) -> Result<Vec<u8>, String> {
         if (matches!(self.reader, None)) {
             self.init_buffer();
@@ -104,13 +111,29 @@ impl ByteReader for BufferedFileReader {
             let n = buff.unwrap().len().min(self.chunk_size);
             let chunk = buff.unwrap()[..n].to_vec();
             if let Some(pos) = memchr(byte, &chunk) {
-                response_vector.extend_from_slice(&chunk[..(pos+1).min(chunk.len())]);
+                response_vector.extend_from_slice(&chunk[..(pos + 1).min(chunk.len())]);
                 self.reader.as_mut().unwrap().consume(pos);
                 return Ok(response_vector);
             }
             response_vector.extend_from_slice(&chunk);
             self.reader.as_mut().unwrap().consume(n);
             self.offset += n;
+        }
+    }
+    fn skip_white_space(&mut self) {
+        let reader = self.reader.as_mut().unwrap();
+        let mut currentIdx = self.offset;
+        loop {
+            let mut buf = reader.fill_buf().ok().unwrap();
+            if (buf.is_empty()) {
+                return;
+            }
+            if (buf[currentIdx] != b' ') {
+                self.offset = currentIdx;
+                return;
+            }
+            currentIdx = currentIdx+1;
+            reader.consume(1);
         }
     }
 }

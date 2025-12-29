@@ -17,45 +17,39 @@ pub enum TokenType {
     MinusSign = 13,
     NewLine = 14,
     Tab = 15,
-    Invalid = 16,
+    CarriageReturn = 16,
+    Unknown = 17,
+    Invalid = 18,
 }
 
 impl TokenType {
     #[inline]
-    pub fn get_token_type(str: &'static str) -> TokenType {
-        let string = String::from(str);
-        let mut chars = string.chars();
-        let first = chars.next();
-
-        if let (Some(c), None) = (first, chars.next()) {
-            return Self::get_token_type_from_char(c);
-        }
-        match str {
-            "null" => TokenType::Null,
-            "true" | "false" => TokenType::Boolean,
-            _ => TokenType::Invalid,
-        }
-    }
-
-    #[inline]
-    const fn get_token_type_from_char(c: char) -> TokenType {
-        let u8char = c as u8;
-        if (u8char >= b'0' && u8char <= b'9') {
+    pub fn get_token_type_from_byte(c: u8) -> TokenType {
+        if (c >= b'0' && c <= b'9') {
             return TokenType::Number;
         }
         match c {
-            '{' => TokenType::RightBrace,
-            '}' => TokenType::LeftBrace,
-            '[' => TokenType::RightSquareBracket,
-            ']' => TokenType::LeftSquareBracket,
-            '.' => TokenType::Point,
-            ':' => TokenType::Colon,
-            ',' => TokenType::Comma,
-            '-' => TokenType::MinusSign,
-            '"' => TokenType::DoubleQuote,
-            '\n' => TokenType::NewLine,
-            '\t' => TokenType::Tab,
-            _ => TokenType::Text,
+            b'{' => TokenType::RightBrace,
+            b'}' => TokenType::LeftBrace,
+            b'[' => TokenType::RightSquareBracket,
+            b']' => TokenType::LeftSquareBracket,
+            b'.' => TokenType::Point,
+            b':' => TokenType::Colon,
+            b',' => TokenType::Comma,
+            b'-' => TokenType::MinusSign,
+            b'"' => TokenType::DoubleQuote,
+            b'\n' => TokenType::NewLine,
+            b'\t' => TokenType::Tab,
+            b'\r' => TokenType::CarriageReturn,
+            c if c <= 0x7F => TokenType::Text,
+            _ => TokenType::Unknown,
         }
+    }
+    #[inline]
+    pub fn is_single_byte_token(c: u8) -> bool {
+        return match c {
+            b'{' | b'}' | b'[' | b']' | b'.' | b':' | b',' | b'-' | b'"' | b'\n' | b'\t' | b'\r' => true,
+            _ => false,
+        };
     }
 }
