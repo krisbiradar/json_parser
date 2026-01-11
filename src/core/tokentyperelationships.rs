@@ -2,6 +2,7 @@ use crate::core::tokentype::TokenType;
 pub struct TokenTypeRelationShips;
 
 impl TokenTypeRelationShips {
+    #[allow(dead_code)]
     const TOKENTYPE_RELATIONSHIPS: [&[TokenType]; 14] = [
         &[
             TokenType::Comma,
