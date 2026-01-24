@@ -19,6 +19,10 @@ impl Token {
         };
     }
 
+    pub fn token_type(&self) -> TokenType {
+        self.token_type
+    }
+
     pub fn with_value(
         token_type: TokenType,
         start_pos: usize,
@@ -32,5 +36,13 @@ impl Token {
             end_pos: None,
             token_idx,
         };
+    }
+
+    pub fn get_value_as_string(&self) -> Option<String> {
+        if let Some(ref val) = self.value {
+            val.downcast_ref::<String>().map(|s| s.clone())
+        } else {
+            None
+        }
     }
 }

@@ -33,6 +33,10 @@ impl TokenType {
             b'}' => TokenType::LeftBrace,
             b'[' => TokenType::RightSquareBracket,
             b']' => TokenType::LeftSquareBracket,
+            b'{' => TokenType::LeftBrace,
+            b'}' => TokenType::RightBrace,
+            b'[' => TokenType::LeftSquareBracket,
+            b']' => TokenType::RightSquareBracket,
             b'.' => TokenType::Point,
             b':' => TokenType::Colon,
             b',' => TokenType::Comma,
@@ -51,5 +55,9 @@ impl TokenType {
             b'{' | b'}' | b'[' | b']' | b'.' | b':' | b',' | b'-' | b'"' | b'\n' | b'\t' | b'\r' => true,
             _ => false,
         };
+    }
+
+    pub fn is_whitespace(c: u8) -> bool {
+        matches!(c, b' ' | b'\n' | b'\t' | b'\r')
     }
 }

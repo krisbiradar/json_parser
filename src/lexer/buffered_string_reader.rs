@@ -23,35 +23,38 @@ impl BufferedStringReader {
 }
 impl ByteReader for BufferedStringReader {
     fn next_byte(&mut self) -> Result<u8, String> {
-        if (self.offset == self.value.len() - 1) {
+        if self.offset >= self.value.len() {
             return Err("The string input has ended".to_string());
         }
-        let mut res = self.value[self.offset];
-        if (res == b' ') {
-            self.skip_white_space();
-        }
-        res = self.value[self.offset];
-        self.offset = self.offset + 1;
-        return Ok(res);
+        let res = self.value[self.offset];
+        self.offset += 1;
+        Ok(res)
     }
 
     fn next_chunk(&mut self) -> Result<Vec<u8>, String> {
-        let res =
-            self.value[self.offset..(self.offset + self.chunk_size).min(self.value.len())].to_vec();
-        self.offset += self.chunk_size.min((self.value.len() - 1) - self.offset);
+        let end = (self.offset + self.chunk_size).min(self.value.len());
+        let res = self.value[self.offset..end].to_vec();
+        self.offset = end;
         Ok(res)
     }
     fn next_until(&mut self, byte: u8) -> Result<Vec<u8>, String> {
         if let Some(pos) = memchr(byte, &self.value[self.offset..]) {
-            Ok(self.value[self.offset..pos + 1.min(self.value.len())].to_vec())
+            let end = self.offset + pos + 1;
+            let res = self.value[self.offset..end].to_vec();
+            self.offset = end;
+            Ok(res)
         } else {
             Err("the requested byte sequence is not found".to_string())
         }
     }
 
     fn skip_white_space(&mut self) {
-        while (self.value[self.offset] == b' ') {
-            self.offset = self.offset+1;
+        while self.offset < self.value.len() && self.value[self.offset] == b' ' {
+            self.offset += 1;
         }
+    }
+
+    fn offset(& mut self) -> usize {
+        return self.offset;
     }
 }

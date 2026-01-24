@@ -52,10 +52,6 @@ impl ByteReader for BufferedFileReader {
             return Err("The stream has ended".to_string());
         }
         let b = buff.unwrap()[0];
-        if (b == b' ') {
-            self.skip_white_space();
-            return self.next_byte();
-        }
         self.reader.as_mut().unwrap().consume(1);
         self.offset = self.offset + 1;
 
@@ -112,7 +108,8 @@ impl ByteReader for BufferedFileReader {
             let chunk = buff.unwrap()[..n].to_vec();
             if let Some(pos) = memchr(byte, &chunk) {
                 response_vector.extend_from_slice(&chunk[..(pos + 1).min(chunk.len())]);
-                self.reader.as_mut().unwrap().consume(pos);
+                self.reader.as_mut().unwrap().consume(pos + 1);
+                self.offset += pos + 1;
                 return Ok(response_vector);
             }
             response_vector.extend_from_slice(&chunk);
