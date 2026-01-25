@@ -47,10 +47,15 @@ impl ByteReader for BufferedStringReader {
             Err("the requested byte sequence is not found".to_string())
         }
     }
-
+    
     fn skip_white_space(&mut self) {
-        while self.offset < self.value.len() && self.value[self.offset] == b' ' {
-            self.offset += 1;
+        while self.offset < self.value.len() {
+            let b = self.value[self.offset];
+            if b == b' ' || b == b'\n' || b == b'\t' || b == b'\r' {
+                self.offset += 1;
+            } else {
+                break;
+            }
         }
     }
 

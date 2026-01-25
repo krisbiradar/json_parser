@@ -29,10 +29,6 @@ impl TokenType {
             return TokenType::Number;
         }
         match c {
-            b'{' => TokenType::RightBrace,
-            b'}' => TokenType::LeftBrace,
-            b'[' => TokenType::RightSquareBracket,
-            b']' => TokenType::LeftSquareBracket,
             b'{' => TokenType::LeftBrace,
             b'}' => TokenType::RightBrace,
             b'[' => TokenType::LeftSquareBracket,

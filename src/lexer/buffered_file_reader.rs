@@ -118,19 +118,22 @@ impl ByteReader for BufferedFileReader {
         }
     }
     fn skip_white_space(&mut self) {
+        if self.reader.is_none() {
+            self.init_buffer();
+        }
         let reader = self.reader.as_mut().unwrap();
-        let mut currentIdx = self.offset;
         loop {
-            let mut buf = reader.fill_buf().ok().unwrap();
-            if (buf.is_empty()) {
+            let buf = match reader.fill_buf() {
+                Ok(b) if !b.is_empty() => b,
+                _ => return,
+            };
+            let b = buf[0];
+            if b == b' ' || b == b'\n' || b == b'\t' || b == b'\r' {
+                reader.consume(1);
+                self.offset += 1;
+            } else {
                 return;
             }
-            if (buf[currentIdx] != b' ') {
-                self.offset = currentIdx;
-                return;
-            }
-            currentIdx = currentIdx+1;
-            reader.consume(1);
         }
     }
 }
