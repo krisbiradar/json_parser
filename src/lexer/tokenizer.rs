@@ -116,24 +116,46 @@ impl Tokenizer {
 
     fn handle_first_last_token(&mut self) -> Result<Token, String> {
         if self.fsm.current_token_idx == 0 {
+            self.reader.skip_white_space();
             let byte = self.reader.next_byte()?;
             let token_type = TokenType::get_token_type_from_byte(byte);
 
-            if token_type != TokenType::LeftBrace && token_type != TokenType::LeftSquareBracket {
-                return Err(format!(
-                    "Invalid JSON format: expected '{{' or '[', found byte {}",
-                    byte
-                ));
+            if token_type == TokenType::LeftBrace || token_type == TokenType::LeftSquareBracket {
+                let token = Token::new(token_type, self.reader.offset() - 1, self.fsm.current_token_idx);
+                self.fsm
+                    .all_tokens
+                    .insert(self.fsm.current_token_idx, token.clone());
+                self.fsm.current_token_idx += 1;
+                self.fsm.total_bytes_consumed += 1;
+
+                return Ok(token);
             }
 
-            let token = Token::new(token_type, 0, self.fsm.current_token_idx);
-            self.fsm
-                .all_tokens
-                .insert(self.fsm.current_token_idx, token.clone());
-            self.fsm.current_token_idx += 1;
-            self.fsm.total_bytes_consumed += 1;
-
-            return Ok(token);
+            match byte {
+                b'"' => {
+                    
+                    self.fsm.total_bytes_consumed += 1;
+                    let start = self.reader.offset() - 1;
+                    let str_bytes = self.reader.next_until(b'"')?;
+                    self.reader.next_byte()?;
+                    let s = String::from_utf8(str_bytes).map_err(|e| e.to_string())?;
+                    let token = Token::with_value(
+                        TokenType::DoubleQuote,
+                        start,
+                        self.fsm.current_token_idx,
+                        Box::new(s),
+                    );
+                    self.fsm
+                        .all_tokens
+                        .insert(self.fsm.current_token_idx, token.clone());
+                    self.fsm.current_token_idx += 1;
+                    return Ok(token);
+                }
+                b't' | b'f' | b'T' | b'F' => return self.handle_boolean(byte),
+                b'n' | b'N' => return self.handle_null(byte),
+                b'0'..=b'9' | b'-' => return self.handle_number(byte),
+                _ => return self.handle_invalid(byte),
+            }
         }
 
         if self.fsm.total_bytes_consumed == self.fsm.total_bytes_to_consume - 1 {
