@@ -22,6 +22,32 @@ pub enum TokenType {
     Invalid = 18,
 }
 
+impl std::fmt::Display for TokenType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TokenType::RightBrace => write!(f, "RightBrace"),
+            TokenType::LeftBrace => write!(f, "LeftBrace"),
+            TokenType::RightSquareBracket => write!(f, "RightSquareBracket"),
+            TokenType::LeftSquareBracket => write!(f, "LeftSquareBracket"),
+            TokenType::Number => write!(f, "Number"),
+            TokenType::Colon => write!(f, "Colon"),
+            TokenType::Text => write!(f, "Text"),
+            TokenType::Null => write!(f, "Null"),
+            TokenType::Boolean => write!(f, "Boolean"),
+            TokenType::Comma => write!(f, "Comma"),
+            TokenType::DoubleQuote => write!(f, "DoubleQuote"),
+            TokenType::EOF => write!(f, "EOF"),
+            TokenType::Point => write!(f, "Point"),
+            TokenType::MinusSign => write!(f, "MinusSign"),
+            TokenType::NewLine => write!(f, "NewLine"),
+            TokenType::Tab => write!(f, "Tab"),
+            TokenType::CarriageReturn => write!(f, "CarriageReturn"),
+            TokenType::Unknown => write!(f, "Unknown"),
+            TokenType::Invalid => write!(f, "Invalid"),
+        }
+    }
+}
+
 impl TokenType {
     #[inline]
     pub fn get_token_type_from_byte(c: u8) -> TokenType {
@@ -52,7 +78,7 @@ impl TokenType {
             _ => false,
         };
     }
-
+    #[inline]
     pub fn is_whitespace(c: u8) -> bool {
         matches!(c, b' ' | b'\n' | b'\t' | b'\r')
     }

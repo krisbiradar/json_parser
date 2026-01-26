@@ -23,21 +23,21 @@ impl BufferedStringReader {
 }
 impl ByteReader for BufferedStringReader {
     fn next_byte(&mut self) -> Result<u8, String> {
-        if self.offset >= self.value.len() {
-            return Err("The string input has ended".to_string());
-        }
+        self.throw_if_consumed().unwrap();
         let res = self.value[self.offset];
         self.offset += 1;
         Ok(res)
     }
 
     fn next_chunk(&mut self) -> Result<Vec<u8>, String> {
+        self.throw_if_consumed().unwrap();
         let end = (self.offset + self.chunk_size).min(self.value.len());
         let res = self.value[self.offset..end].to_vec();
         self.offset = end;
         Ok(res)
     }
     fn next_until(&mut self, byte: u8) -> Result<Vec<u8>, String> {
+        self.throw_if_consumed().unwrap();
         if let Some(pos) = memchr(byte, &self.value[self.offset..]) {
             let end = self.offset + pos + 1;
             let res = self.value[self.offset..end].to_vec();
@@ -61,5 +61,11 @@ impl ByteReader for BufferedStringReader {
 
     fn offset(& mut self) -> usize {
         return self.offset;
+    }
+    fn throw_if_consumed(& mut self )->Result<(),String>{
+        if(self.offset >=self.value.len()){
+            return Err("Input text is consumed".to_string());
+        }
+        Ok(())
     }
 }

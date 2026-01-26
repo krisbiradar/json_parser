@@ -45,4 +45,23 @@ impl Token {
             None
         }
     }
+    pub fn value(&self) -> Option<&Box<dyn Any>> {
+        self.value.as_ref()
+    }
+    pub fn to_string(&self) -> String {
+        match self.token_type {
+            TokenType::DoubleQuote | TokenType::Number | TokenType::Boolean | TokenType::Null | TokenType::Text => {
+                if let Some(ref val) = self.value {
+                    if let Some(s) = val.downcast_ref::<String>() {
+                        return s.clone();
+                    }
+                }
+                format!("{}", self.token_type)
+            }
+            _ => format!("{}", self.token_type),
+        }
+    }
+    pub fn clone(&self) -> Token {
+        Token::new(self.token_type, self.start_pos, self.token_idx)
+    }
 }

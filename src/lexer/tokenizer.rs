@@ -2,16 +2,14 @@ use crate::{
     core::{token::Token, tokentype::TokenType, tokentyperelationships::TokenTypeRelationShips},
     lexer::{
         buffered_file_reader::BufferedFileReader, buffered_string_reader::BufferedStringReader,
-        byte_reader::ByteReader,
+        byte_reader::ByteReader, fsm::{FSM, FSMState},
     },
 };
 
 use std::path::Path;
 pub struct Tokenizer {
     reader: Box<dyn ByteReader>,
-    last_token_type: Option<TokenType>,
-    unused_bytes: Vec<u8>,
-    // tokens: Vec<Token>, // Not used for streaming
+    fsm: FSM,
 }
 
 impl Tokenizer {
@@ -20,20 +18,24 @@ impl Tokenizer {
             (Some(_str), Some(_path)) => {
                 panic!("both json_string and file_path are supplied! choose one...");
             }
-            (Some(str), None) => Self {
-                reader: Box::new(BufferedStringReader::new(str.as_bytes().to_vec())),
-                last_token_type: None,
-                unused_bytes: Vec::new(),
-            },
+            (Some(str), None) => {
+                let size = str.len();
+                Self {
+                    reader: Box::new(BufferedStringReader::new(str.as_bytes().to_vec())),
+                    fsm: FSM::new(size),
+                }
+            }
             (None, Some(path_string)) => {
                 let path = Path::new(&path_string);
                 if (!path.exists()) {
                     panic!("the file_path : {} doesnt exist", path_string);
                 } else {
+                    let size = std::fs::metadata(&path)
+                        .expect("Failed to get file metadata")
+                        .len() as usize;
                     Self {
                         reader: Box::new(BufferedFileReader::new(path.to_path_buf())),
-                        last_token_type: None,
-                        unused_bytes: Vec::new(),
+                        fsm: FSM::new(size),
                     }
                 }
             }
@@ -43,111 +45,106 @@ impl Tokenizer {
         }
     }
 
-    pub fn next_token(&mut self) -> Result<Token, String> {
-        let mut first_byte;
-        loop {
-            if !self.unused_bytes.is_empty() {
-                first_byte = self.unused_bytes.remove(0);
-            } else {
-                match self.reader.next_byte() {
-                    Ok(b) => first_byte = b,
-                    Err(_) => {
-                        // EOF
-                        if self.last_token_type == Some(TokenType::EOF) {
-                             return Err("EOF".to_string());
-                        }
-                        let token = Token::new(TokenType::EOF, self.reader.offset(), 0);
-                        self.validate_token_seq(token.token_type())?;
-                        self.last_token_type = Some(TokenType::EOF);
-                        return Ok(token);
-                    }
-                }
-            }
-
-            if !TokenType::is_whitespace(first_byte) {
-                break;
-            }
-        }
-
-        let start_pos = self.reader.offset() - 1;
-        let token_type = TokenType::get_token_type_from_byte(first_byte);
-        let token: Token;
-
-        match token_type {
-            TokenType::LeftBrace | TokenType::RightBrace | 
-            TokenType::LeftSquareBracket | TokenType::RightSquareBracket |
-            TokenType::Colon | TokenType::Comma => {
-                token = Token::new(token_type, start_pos, 0);
-            }
-            TokenType::DoubleQuote => {
-                let mut content = self.reader.next_until(b'"')?;
-                // Remove the closing quote from content
-                if let Some(last) = content.last() {
-                    if *last == b'"' {
-                        content.pop();
-                    }
-                }
-                let value = String::from_utf8_lossy(&content).to_string();
-                token = Token::with_value(TokenType::DoubleQuote, start_pos, 0, Box::new(value));
-            }
-            TokenType::Number | TokenType::MinusSign => {
-                let mut num_vec = vec![first_byte];
-                loop {
-                    let b = match self.reader.next_byte() {
-                        Ok(b) => b,
-                        Err(_) => break, 
-                    };
-                    if TokenType::is_single_byte_token(b) || TokenType::is_whitespace(b) {
-                        self.unused_bytes.push(b);
-                        break;
-                    }
-                    num_vec.push(b);
-                }
-                let value = String::from_utf8_lossy(&num_vec).to_string();
-                token = Token::with_value(TokenType::Number, start_pos, 0, Box::new(value));
-            }
-            TokenType::Text => {
-                let mut text_vec = vec![first_byte];
-                loop {
-                    let b = match self.reader.next_byte() {
-                        Ok(b) => b,
-                        Err(_) => break,
-                    };
-                    if TokenType::is_single_byte_token(b) || TokenType::is_whitespace(b) {
-                        self.unused_bytes.push(b);
-                        break;
-                    }
-                    text_vec.push(b);
-                }
-                let s = String::from_utf8_lossy(&text_vec);
-                if s == "true" || s == "false" {
-                    token = Token::with_value(TokenType::Boolean, start_pos, 0, Box::new(s.to_string()));
-                } else if s == "null" {
-                    token = Token::with_value(TokenType::Null, start_pos, 0, Box::new(s.to_string()));
-                } else {
-                    return Err(format!("Unknown token: {}", s));
-                }
-            }
-            _ => return Err("Unknown token type".to_string()),
-        }
-
-        self.validate_token_seq(token.token_type())?;
-        self.last_token_type = Some(token.token_type());
-        Ok(token)
-    }
-
-    fn validate_token_seq(&self, token_type: TokenType) -> Result<(), String> {
-        if let Some(last) = self.last_token_type {
-            let allowed = TokenTypeRelationShips::get_allowed_next_tokens(last);
-            if !allowed.contains(&token_type) {
-                return Err(format!("Invalid token sequence: {:?} -> {:?}", last, token_type));
-            }
+    fn next_token(&mut self) -> Result<Token, String> {
+        if self.fsm.current_token_idx == 0
+            || self.fsm.total_bytes_consumed == self.fsm.total_bytes_to_consume - 1
+        {
+            return self.handle_first_last_token();
         } else {
-            // Start of file
-            if token_type != TokenType::LeftBrace && token_type != TokenType::LeftSquareBracket {
-                return Err("JSON must start with { or [".to_string());
+            loop {
+                if(self.fsm.processed()){
+                    break;
+                }
+
+                let seq = self.reader.next_byte().expect("Error tokenizing string");
+
+                if (!TokenType::is_single_byte_token(seq)) {
+                  //lets first process boolean and null values and number tokens 
+                  // we can process strings later
+                  self.fsm.current_sequence.push(seq);
+                  match seq  {
+                    b't' | b'f' |  b'T' | b'F' => self.handle_possible_boolean(),
+                    b'n' | b'N' => self.handle_possible_null(),
+                    b'0'..=b'9' => self.handle_possible_number(),
+                    b'"' => self.handle_string(),
+                    _ => {
+                        self.fsm.current_sequence.clear();
+                        self.fsm.total_bytes_consumed += 1;
+                        continue;
+                    }
+
+                  }
+                  let chunk = self.reader.next_chunk().expect("Error fetching chunk");
+                 
+                } else {
+                    let token = Token::new(
+                        TokenType::get_token_type_from_byte(seq),
+                        self.reader.offset() - 1,
+                        self.fsm.current_token_idx,
+                    );
+                   
+                    TokenTypeRelationShips::is_valid_token_sequence(
+                        self.fsm.last_token().as_ref(),
+                        Some(&token),
+                    ).unwrap();
+                    self.fsm
+                        .all_tokens
+                        .insert(self.fsm.current_token_idx, token.clone());
+                    self.fsm.current_token_idx += 1;
+                    self.fsm.total_bytes_consumed += 1;
+                }
             }
         }
-        Ok(())
+        return Err("Something went wrong ".to_string());
+    }
+    
+
+    fn handle_first_last_token(&mut self) -> Result<Token, String> {
+        if self.fsm.current_token_idx == 0 {
+            let byte = self.reader.next_byte()?;
+            let token_type = TokenType::get_token_type_from_byte(byte);
+
+            if token_type != TokenType::LeftBrace && token_type != TokenType::LeftSquareBracket {
+                return Err(format!(
+                    "Invalid JSON format: expected '{{' or '[', found byte {}",
+                    byte
+                ));
+            }
+
+            let token = Token::new(token_type, 0, self.fsm.current_token_idx);
+            self.fsm
+                .all_tokens
+                .insert(self.fsm.current_token_idx, token.clone());
+            self.fsm.current_token_idx += 1;
+            self.fsm.total_bytes_consumed += 1;
+
+            return Ok(token);
+        }
+
+        if self.fsm.total_bytes_consumed == self.fsm.total_bytes_to_consume - 1 {
+            let token = Token::new(
+                TokenType::EOF,
+                self.fsm.total_bytes_consumed,
+                self.fsm.current_token_idx,
+            );
+            self.fsm
+                .all_tokens
+                .insert(self.fsm.current_token_idx, token.clone());
+            return Ok(token);
+        }
+
+        Err("Invalid state".to_string())
+    }
+    fn handle_possible_boolean(& mut self){
+
+    }
+    fn handle_possible_null(& mut self){
+
+    }
+    fn handle_possible_number(& mut self){
+
+    }
+    fn handle_string(& mut self){
+
     }
 }

@@ -1,3 +1,4 @@
+use crate::core::token::Token;
 use crate::core::tokentype::TokenType;
 pub struct TokenTypeRelationShips;
 
@@ -79,10 +80,7 @@ impl TokenTypeRelationShips {
         // 12: Point -> None (Internal)
         &[],
         // 13: MinusSign -> None (Internal)
-        &[
-            TokenType::Number,
-            TokenType::Text,
-        ],
+        &[TokenType::Number, TokenType::Text],
         // 14: NewLine -> None (Whitespace)
         &[],
         // 15: Tab -> None (Whitespace)
@@ -101,6 +99,31 @@ impl TokenTypeRelationShips {
             Self::TOKENTYPE_RELATIONSHIPS[idx]
         } else {
             &[]
+        }
+    }
+    pub fn is_valid_token_sequence(first: Option<&Token>, second: Option<&Token>) -> Result<bool, String> {
+        match (first, second) {
+            (Some(f), Some(s)) => {
+                let idx = f.token_type() as usize;
+                if idx < Self::TOKENTYPE_RELATIONSHIPS.len() {
+                    let is_valid = Self::TOKENTYPE_RELATIONSHIPS[idx].contains(&s.token_type());
+                    if is_valid {
+                        Ok(true)
+                    } else {
+                        Err(format!("Invalid token sequence: {} -> {}", f.token_type(), s.token_type()))
+                    }
+                } else {
+                    Err(format!("Unknown token type: {}", f.token_type()))
+                }
+            }
+            (None, Some(s)) => {
+                if matches!(s.token_type(), TokenType::LeftBrace | TokenType::LeftSquareBracket) {
+                    Ok(true)
+                } else {
+                    Err(format!("JSON must start with {{ or [, found {}", s.token_type()))
+                }
+            }
+            _ => Err("Invalid token sequence: missing tokens".to_string()),
         }
     }
 }

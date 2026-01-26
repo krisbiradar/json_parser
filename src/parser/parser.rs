@@ -3,7 +3,6 @@ use crate::{
     lexer::tokenizer::Tokenizer,
 };
 use std::collections::HashMap;
-use std::any::Any;
 
 // NEW CODE — ADDITION
 pub struct Parser {

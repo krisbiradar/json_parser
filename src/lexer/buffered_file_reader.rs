@@ -11,6 +11,7 @@ pub struct BufferedFileReader {
     chunk_size: usize,
     offset: usize,
     reader: Option<BufReader<File>>,
+    file_size: usize,
 }
 
 impl BufferedFileReader {
@@ -21,11 +22,15 @@ impl BufferedFileReader {
                 path.to_str().unwrap_or_default()
             );
         } else {
+            let file_size = std::fs::metadata(&path)
+                .expect("Failed to get file metadata")
+                .len() as usize;
             Self {
                 path: path,
                 offset: 0,
                 chunk_size: constants::DEFAULT_CHUNK_SIZE_FILE,
                 reader: None,
+                file_size,
             }
         }
     }
@@ -44,9 +49,7 @@ impl BufferedFileReader {
 
 impl ByteReader for BufferedFileReader {
     fn next_byte(&mut self) -> Result<u8, String> {
-        if (matches!(self.reader, None)) {
-            self.init_buffer();
-        }
+        self.throw_if_consumed().unwrap();
         let buff = self.reader.as_mut().unwrap().fill_buf().ok();
         if buff.unwrap().is_empty() {
             return Err("The stream has ended".to_string());
@@ -57,13 +60,11 @@ impl ByteReader for BufferedFileReader {
 
         return Ok(b);
     }
-    fn offset(& mut self) -> usize {
+    fn offset(&mut self) -> usize {
         return self.offset;
     }
     fn next_chunk(&mut self) -> Result<Vec<u8>, String> {
-        if (matches!(self.reader, None)) {
-            self.init_buffer();
-        }
+        self.throw_if_consumed().unwrap();
         let reader = self.reader.as_mut().ok_or("reader missing")?;
 
         let mut out = Vec::with_capacity(self.chunk_size);
@@ -95,9 +96,7 @@ impl ByteReader for BufferedFileReader {
     }
 
     fn next_until(&mut self, byte: u8) -> Result<Vec<u8>, String> {
-        if (matches!(self.reader, None)) {
-            self.init_buffer();
-        }
+        self.throw_if_consumed().unwrap();
         let mut response_vector: Vec<u8> = Vec::new();
         loop {
             let buff = self.reader.as_mut().unwrap().fill_buf().ok();
@@ -134,6 +133,18 @@ impl ByteReader for BufferedFileReader {
             } else {
                 return;
             }
+        }
+    }
+    fn throw_if_consumed(&mut self) -> Result<(), String> {
+        if self.reader.is_none() {
+            self.init_buffer();
+        }
+
+        let reader = self.reader.as_mut().unwrap();
+        match reader.fill_buf() {
+            Ok(buf) if buf.is_empty() => Err("Input file is consumed".to_string()),
+            Ok(_) => Ok(()),
+            Err(_) => Err("Error reading file".to_string()),
         }
     }
 }
