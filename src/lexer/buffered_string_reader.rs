@@ -39,12 +39,41 @@ impl ByteReader for BufferedStringReader {
     fn next_until(&mut self, byte: u8) -> Result<Vec<u8>, String> {
         self.throw_if_consumed().unwrap();
         if let Some(pos) = memchr(byte, &self.value[self.offset..]) {
-            let end = self.offset + pos + 1;
+            let end = self.offset + pos;
             let res = self.value[self.offset..end].to_vec();
-            self.offset = end;
+            self.offset = end ;
             Ok(res)
         } else {
             Err("the requested byte sequence is not found".to_string())
+        }
+    }
+    
+    fn next_until_any(&mut self, bytes: &[u8]) -> Result<Vec<u8>, String> {
+        self.throw_if_consumed()?;
+        let mut min_pos = None;
+
+        let slice_to_search = &self.value[self.offset..];
+
+        for &byte in bytes {
+            if let Some(pos) = memchr(byte, slice_to_search) {
+                min_pos = Some(match min_pos {
+                    None => pos,
+                    Some(p) => pos.min(p),
+                });
+                break;
+            }
+        }
+
+        if let Some(pos) = min_pos {
+            let end = self.offset + pos;
+            let result = self.value[self.offset..end].to_vec();
+            self.offset = end;
+            Ok(result)
+        } else {
+            // Delimiter not found, so consume till the end
+            let result = self.value[self.offset..].to_vec();
+            self.offset = self.value.len();
+            Ok(result)
         }
     }
     

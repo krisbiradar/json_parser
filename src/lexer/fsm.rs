@@ -6,6 +6,7 @@ pub struct FSM {
     pub current_sequence: Vec<u8>,
     pub total_bytes_consumed: usize,
     pub total_bytes_to_consume: usize,
+    pub current_quote_state: FSMQuoteState,
     pub current_state: FSMState,
     pub all_tokens: HashMap<usize, Token>,
     pub current_token_idx: usize,
@@ -16,6 +17,7 @@ impl FSM {
         Self {
             current_sequence: Vec::new(),
             current_state: FSMState::Start,
+            current_quote_state: FSMQuoteState::KeyEnd,
             all_tokens: HashMap::new(),
             total_bytes_consumed: 0,
             total_bytes_to_consume: bytes_to_consume,
@@ -40,11 +42,15 @@ impl FSM {
         self.total_bytes_consumed == self.total_bytes_to_consume
     }
 }
+pub enum FSMQuoteState {
+    KeyStart,
+    KeyEnd,
+    ValueStart,
+    ValueEnd,
+}
 pub enum FSMState {
     Start,
-    EnKeyString,
+    Enkey,
     EnValue,
-    EnStringValue,
-    EnNumberValue,
     End,
 }

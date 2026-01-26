@@ -2,7 +2,7 @@ use crate::{
     core::{token::Token, tokentype::TokenType, tokentyperelationships::TokenTypeRelationShips},
     lexer::{
         buffered_file_reader::BufferedFileReader, buffered_string_reader::BufferedStringReader,
-        byte_reader::ByteReader, fsm::{FSM, FSMState},
+        byte_reader::ByteReader, fsm::FSM,
     },
 };
 
@@ -45,59 +45,74 @@ impl Tokenizer {
         }
     }
 
-    fn next_token(&mut self) -> Result<Token, String> {
+    pub fn next_token(&mut self) -> Result<Token, String> {
         if self.fsm.current_token_idx == 0
             || self.fsm.total_bytes_consumed == self.fsm.total_bytes_to_consume - 1
         {
             return self.handle_first_last_token();
         } else {
-            loop {
-                if(self.fsm.processed()){
-                    break;
-                }
+            if (self.fsm.processed()) {
+                return Err("source already processed".to_string());
+            }
 
-                let seq = self.reader.next_byte().expect("Error tokenizing string");
+            let mut seq = self.reader.next_byte().unwrap();
+            if (TokenType::is_whitespace(seq)) {
+                self.reader.skip_white_space();
+            }
+            seq = self.reader.next_byte().unwrap();
+            if (!TokenType::is_single_byte_token(seq) && seq != b'"') {
+                self.fsm.current_sequence.push(seq);
+                return match seq {
+                    b't' | b'f' | b'T' | b'F' => self.handle_boolean(seq),
+                    b'n' | b'N' => self.handle_null(seq),
+                    b'0'..=b'9' | b'-' => self.handle_number(seq),
+                    _ => self.handle_invalid(seq),
+                };
+            } else if (seq == b'"') {
+                self.fsm.total_bytes_consumed += 1;
+                let quote_token = Token::new(
+                    TokenType::DoubleQuote,
+                    self.reader.offset() - 1,
+                    self.fsm.current_token_idx,
+                );
+                self.fsm
+                    .all_tokens
+                    .insert(self.fsm.current_token_idx, quote_token.clone());
+                let start = self.reader.offset();
+                let str = self.reader.next_until(b'"').unwrap();
+                let token = Token::with_value(
+                    TokenType::Text,
+                    start,
+                    self.fsm.current_token_idx,
+                    Box::new(str),
+                );
+                self.fsm
+                    .all_tokens
+                    .insert(self.fsm.current_token_idx, token.clone());
+                self.fsm.current_token_idx += 1;
+                return Ok(token);
+            } else {
+                let token = Token::new(
+                    TokenType::get_token_type_from_byte(seq),
+                    self.reader.offset() - 1,
+                    self.fsm.current_token_idx,
+                );
 
-                if (!TokenType::is_single_byte_token(seq)) {
-                  //lets first process boolean and null values and number tokens 
-                  // we can process strings later
-                  self.fsm.current_sequence.push(seq);
-                  match seq  {
-                    b't' | b'f' |  b'T' | b'F' => self.handle_possible_boolean(),
-                    b'n' | b'N' => self.handle_possible_null(),
-                    b'0'..=b'9' => self.handle_possible_number(),
-                    b'"' => self.handle_string(),
-                    _ => {
-                        self.fsm.current_sequence.clear();
-                        self.fsm.total_bytes_consumed += 1;
-                        continue;
-                    }
-
-                  }
-                  let chunk = self.reader.next_chunk().expect("Error fetching chunk");
-                 
-                } else {
-                    let token = Token::new(
-                        TokenType::get_token_type_from_byte(seq),
-                        self.reader.offset() - 1,
-                        self.fsm.current_token_idx,
-                    );
-                   
-                    TokenTypeRelationShips::is_valid_token_sequence(
-                        self.fsm.last_token().as_ref(),
-                        Some(&token),
-                    ).unwrap();
-                    self.fsm
-                        .all_tokens
-                        .insert(self.fsm.current_token_idx, token.clone());
-                    self.fsm.current_token_idx += 1;
-                    self.fsm.total_bytes_consumed += 1;
-                }
+                TokenTypeRelationShips::is_valid_token_sequence(
+                    self.fsm.last_token().as_ref(),
+                    Some(&token),
+                )
+                .unwrap();
+                self.fsm
+                    .all_tokens
+                    .insert(self.fsm.current_token_idx, token.clone());
+                self.fsm.current_token_idx += 1;
+                self.fsm.total_bytes_consumed += 1;
+                return Ok(token);
             }
         }
         return Err("Something went wrong ".to_string());
     }
-    
 
     fn handle_first_last_token(&mut self) -> Result<Token, String> {
         if self.fsm.current_token_idx == 0 {
@@ -135,16 +150,86 @@ impl Tokenizer {
 
         Err("Invalid state".to_string())
     }
-    fn handle_possible_boolean(& mut self){
+    fn handle_boolean(&mut self, first_char: u8) -> Result<Token, String> {
+        let start_pos = self.reader.offset() - 1;
+        let mut bytes = self.reader.next_until_any(&[b',', b']', b'}'])?;
+        bytes.insert(0, first_char);
 
+        let s = String::from_utf8_lossy(&bytes).trim().to_lowercase();
+
+        if s == "true" || s == "false" {
+            let token = Token::with_value(
+                TokenType::Boolean,
+                start_pos,
+                self.fsm.current_token_idx,
+                Box::new(s.to_string()),
+            );
+            self.fsm
+                .all_tokens
+                .insert(self.fsm.current_token_idx, token.clone());
+            self.fsm.current_token_idx += 1;
+            Ok(token)
+        } else {
+            Err(format!("Invalid boolean: {}", s))
+        }
     }
-    fn handle_possible_null(& mut self){
 
+    fn handle_null(&mut self, first_char: u8) -> Result<Token, String> {
+        let start_pos = self.reader.offset() - 1;
+        let mut bytes = self.reader.next_until_any(&[b',', b']', b'}'])?;
+        bytes.insert(0, first_char);
+
+        let s = String::from_utf8_lossy(&bytes).trim().to_lowercase();
+
+        if s == "null" {
+            let token = Token::with_value(
+                TokenType::Null,
+                start_pos,
+                self.fsm.current_token_idx,
+                Box::new(s.to_string()),
+            );
+            self.fsm
+                .all_tokens
+                .insert(self.fsm.current_token_idx, token.clone());
+            self.fsm.current_token_idx += 1;
+            Ok(token)
+        } else {
+            Err(format!("Invalid null: {}", s))
+        }
     }
-    fn handle_possible_number(& mut self){
 
+    fn handle_number(&mut self, first_char: u8) -> Result<Token, String> {
+        let start_pos = self.reader.offset() - 1;
+        let mut bytes = self.reader.next_until_any(&[b',', b']', b'}'])?;
+        bytes.insert(0, first_char);
+
+        let s = String::from_utf8_lossy(&bytes).trim().to_string();
+
+        let token = Token::with_value(
+            TokenType::Number,
+            start_pos,
+            self.fsm.current_token_idx,
+            Box::new(s),
+        );
+        self.fsm
+            .all_tokens
+            .insert(self.fsm.current_token_idx, token.clone());
+        self.fsm.current_token_idx += 1;
+        Ok(token)
     }
-    fn handle_string(& mut self){
 
+    fn handle_string(&mut self) -> Result<Token, String> {
+        Err("Not implemented".to_string())
+    }
+
+    fn handle_invalid(&mut self, first_char: u8) -> Result<Token, String> {
+        Err(format!(
+            "Invalid token starting with: {}",
+            first_char as char
+        ))
+    }
+    pub fn tokenize(&mut self) -> Result<Vec<Token>, String> 
+    {
+        Err("Not implemented".to_string())
     }
 }

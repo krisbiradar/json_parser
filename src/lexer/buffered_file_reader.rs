@@ -106,12 +106,59 @@ impl ByteReader for BufferedFileReader {
             let n = buff.unwrap().len().min(self.chunk_size);
             let chunk = buff.unwrap()[..n].to_vec();
             if let Some(pos) = memchr(byte, &chunk) {
-                response_vector.extend_from_slice(&chunk[..(pos + 1).min(chunk.len())]);
-                self.reader.as_mut().unwrap().consume(pos + 1);
-                self.offset += pos + 1;
+                response_vector.extend_from_slice(&chunk[..pos]);
+                self.reader.as_mut().unwrap().consume(pos);
+                self.offset += pos;
                 return Ok(response_vector);
             }
             response_vector.extend_from_slice(&chunk);
+            self.reader.as_mut().unwrap().consume(n);
+            self.offset += n;
+        }
+    }
+    fn next_until_any(&mut self, bytes: &[u8]) -> Result<Vec<u8>, String> {
+        if self.reader.is_none() {
+            self.init_buffer();
+        }
+        let mut result = Vec::new();
+        loop {
+            let chunk = self
+                .reader
+                .as_mut()
+                .unwrap()
+                .fill_buf()
+                .map_err(|e| e.to_string())?;
+
+            if chunk.is_empty() {
+                return if result.is_empty() {
+                    Err("The stream has ended".to_string())
+                } else {
+                    Ok(result)
+                };
+            }
+
+            let mut min_pos = None;
+            for &byte in bytes {
+                // get the first occurrence of any byte in bytes and return
+                // if theres some priority in the bytes then the parameters should be sent that way itself
+                if let Some(pos) = memchr(byte, chunk) {
+                    min_pos = Some(match min_pos {
+                        None => pos,
+                        Some(p) => pos.min(p),
+                    });
+                    break;
+                }
+            }
+
+            if let Some(pos) = min_pos {
+                result.extend_from_slice(&chunk[..pos]);
+                self.reader.as_mut().unwrap().consume(pos);
+                self.offset += pos;
+                return Ok(result);
+            }
+
+            let n = chunk.len();
+            result.extend_from_slice(chunk);
             self.reader.as_mut().unwrap().consume(n);
             self.offset += n;
         }

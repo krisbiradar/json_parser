@@ -74,7 +74,7 @@ impl TokenType {
     #[inline]
     pub fn is_single_byte_token(c: u8) -> bool {
         return match c {
-            b'{' | b'}' | b'[' | b']' | b'.' | b':' | b',' | b'-' | b'"' | b'\n' | b'\t' | b'\r' => true,
+            b'{' | b'}' | b'[' | b']' | b'.' | b':' | b',' | b'-' | b'\n' | b'\t' | b'\r' => true,
             _ => false,
         };
     }
