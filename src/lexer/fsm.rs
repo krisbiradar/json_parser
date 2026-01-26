@@ -4,8 +4,6 @@ use crate::core::token::Token;
 
 pub struct FSM {
     pub current_sequence: Vec<u8>,
-    pub total_bytes_consumed: usize,
-    pub total_bytes_to_consume: usize,
     pub current_quote_state: FSMQuoteState,
     pub current_state: FSMState,
     pub all_tokens: HashMap<usize, Token>,
@@ -13,14 +11,12 @@ pub struct FSM {
 }
 
 impl FSM {
-    pub fn new(bytes_to_consume: usize) -> Self {
+    pub fn new() -> Self {
         Self {
             current_sequence: Vec::new(),
             current_state: FSMState::Start,
             current_quote_state: FSMQuoteState::KeyEnd,
             all_tokens: HashMap::new(),
-            total_bytes_consumed: 0,
-            total_bytes_to_consume: bytes_to_consume,
             current_token_idx: 0,
         }
     }
@@ -38,9 +34,7 @@ impl FSM {
             return Some(self.all_tokens[&(self.current_token_idx)].clone());
         }
     }
-    pub fn processed(&self) -> bool {
-        self.total_bytes_consumed == self.total_bytes_to_consume
-    }
+    
 }
 pub enum FSMQuoteState {
     KeyStart,

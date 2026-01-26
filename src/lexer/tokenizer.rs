@@ -22,7 +22,7 @@ impl Tokenizer {
                 let size = str.len();
                 Self {
                     reader: Box::new(BufferedStringReader::new(str.as_bytes().to_vec())),
-                    fsm: FSM::new(size),
+                    fsm: FSM::new(),
                 }
             }
             (None, Some(path_string)) => {
@@ -30,12 +30,10 @@ impl Tokenizer {
                 if (!path.exists()) {
                     panic!("the file_path : {} doesnt exist", path_string);
                 } else {
-                    let size = std::fs::metadata(&path)
-                        .expect("Failed to get file metadata")
-                        .len() as usize;
+                 
                     Self {
                         reader: Box::new(BufferedFileReader::new(path.to_path_buf())),
-                        fsm: FSM::new(size),
+                        fsm: FSM::new(),
                     }
                 }
             }
@@ -47,21 +45,19 @@ impl Tokenizer {
 
     pub fn next_token(&mut self) -> Result<Token, String> {
         if self.fsm.current_token_idx == 0
-            || self.fsm.total_bytes_consumed == self.fsm.total_bytes_to_consume - 1
+            || 
         {
             return self.handle_first_last_token();
         } else {
             if (self.fsm.processed()) {
                 return Err("source already processed".to_string());
             }
+            self.reader.skip_white_space();
+            let  seq = self.reader.next_byte().unwrap();
 
-            let mut seq = self.reader.next_byte().unwrap();
-            if (TokenType::is_whitespace(seq)) {
-                self.reader.skip_white_space();
-            }
-            seq = self.reader.next_byte().unwrap();
             if (!TokenType::is_single_byte_token(seq) && seq != b'"') {
-                self.fsm.current_sequence.push(seq);
+
+                self.reader.skip_white_space();
                 return match seq {
                     b't' | b'f' | b'T' | b'F' => self.handle_boolean(seq),
                     b'n' | b'N' => self.handle_null(seq),
@@ -121,7 +117,11 @@ impl Tokenizer {
             let token_type = TokenType::get_token_type_from_byte(byte);
 
             if token_type == TokenType::LeftBrace || token_type == TokenType::LeftSquareBracket {
-                let token = Token::new(token_type, self.reader.offset() - 1, self.fsm.current_token_idx);
+                let token = Token::new(
+                    token_type,
+                    self.reader.offset() - 1,
+                    self.fsm.current_token_idx,
+                );
                 self.fsm
                     .all_tokens
                     .insert(self.fsm.current_token_idx, token.clone());
@@ -133,7 +133,6 @@ impl Tokenizer {
 
             match byte {
                 b'"' => {
-                    
                     self.fsm.total_bytes_consumed += 1;
                     let start = self.reader.offset() - 1;
                     let str_bytes = self.reader.next_until(b'"')?;
@@ -250,8 +249,7 @@ impl Tokenizer {
             first_char as char
         ))
     }
-    pub fn tokenize(&mut self) -> Result<Vec<Token>, String> 
-    {
+    pub fn tokenize(&mut self) -> Result<Vec<Token>, String> {
         Err("Not implemented".to_string())
     }
 }
