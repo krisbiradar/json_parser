@@ -9,10 +9,11 @@ impl TokenTypeRelationShips {
             TokenType::Comma,
             TokenType::RightBrace,
             TokenType::RightSquareBracket,
+            TokenType::LeftBrace,
             TokenType::EOF,
         ],
         // 1: LeftBrace (Start of Object) -> DoubleQuote (Key), RightBrace (Empty)
-        &[TokenType::DoubleQuote, TokenType::RightBrace],
+        &[TokenType::DoubleQuote, TokenType::RightBrace, TokenType::Text],
         // 2: RightSquareBracket (End of Array) -> Comma, RightBrace, RightSquareBracket, EOF
         &[
             TokenType::Comma,
@@ -25,6 +26,7 @@ impl TokenTypeRelationShips {
             TokenType::LeftBrace,
             TokenType::LeftSquareBracket,
             TokenType::DoubleQuote,
+            TokenType::Text,
             TokenType::Number,
             TokenType::Boolean,
             TokenType::Null,
@@ -41,12 +43,14 @@ impl TokenTypeRelationShips {
             TokenType::LeftBrace,
             TokenType::LeftSquareBracket,
             TokenType::DoubleQuote,
+            TokenType::Text,
             TokenType::Number,
+            TokenType::MinusSign,
             TokenType::Boolean,
             TokenType::Null,
         ],
         // 6: Text -> Invalid usually, but if parsed as Bool/Null, see below.
-        &[],
+        &[TokenType::Colon, TokenType::Comma, TokenType::RightBrace, TokenType::RightSquareBracket, TokenType::EOF],
         // 7: Null -> Comma, RightBrace, RightSquareBracket
         &[
             TokenType::Comma,
@@ -61,12 +65,14 @@ impl TokenTypeRelationShips {
         ],
         // 9: Comma -> Key (in Object) or Value (in Array)
         &[
+            TokenType::Text,
             TokenType::DoubleQuote,
             TokenType::LeftBrace,
             TokenType::LeftSquareBracket,
             TokenType::Number,
             TokenType::Boolean,
             TokenType::Null,
+            TokenType::RightSquareBracket,
         ],
         // 10: DoubleQuote -> Colon (if Key), Comma/End (if Value)
         &[

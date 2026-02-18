@@ -1,8 +1,9 @@
 use crate::core::tokentype::TokenType;
-use std::any::Any;
+
+#[derive(Debug, Clone)]
 pub struct Token {
     token_type: TokenType,
-    value: Option<Box<dyn Any>>,
+    value: Option<String>,
     start_pos: usize,
     end_pos: Option<usize>,
     token_idx: usize,
@@ -23,11 +24,15 @@ impl Token {
         self.token_type
     }
 
+    pub fn token_idx(&self) -> usize {
+        self.token_idx
+    }
+
     pub fn with_value(
         token_type: TokenType,
         start_pos: usize,
         token_idx: usize,
-        value: Box<dyn Any>,
+        value: String,
     ) -> Self {
         return Self {
             token_type,
@@ -39,29 +44,23 @@ impl Token {
     }
 
     pub fn get_value_as_string(&self) -> Option<String> {
-        if let Some(ref val) = self.value {
-            val.downcast_ref::<String>().map(|s| s.clone())
-        } else {
-            None
-        }
+        self.value.clone()
     }
-    pub fn value(&self) -> Option<&Box<dyn Any>> {
+    
+    pub fn value(&self) -> Option<&String> {
         self.value.as_ref()
     }
+    
     pub fn to_string(&self) -> String {
         match self.token_type {
             TokenType::DoubleQuote | TokenType::Number | TokenType::Boolean | TokenType::Null | TokenType::Text => {
                 if let Some(ref val) = self.value {
-                    if let Some(s) = val.downcast_ref::<String>() {
-                        return s.clone();
-                    }
+                    return val.clone();
                 }
                 format!("{}", self.token_type)
             }
             _ => format!("{}", self.token_type),
         }
     }
-    pub fn clone(&self) -> Token {
-        Token::new(self.token_type, self.start_pos, self.token_idx)
-    }
+
 }

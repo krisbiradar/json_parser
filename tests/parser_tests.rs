@@ -4,7 +4,7 @@ use json_parser::core::json_value::JsonValue;
 
 fn parse_str(json: &str) -> Result<JsonValue, String> {
     let tokenizer = Tokenizer::new(Some(json.to_string()), None);
-    let mut parser = Parser::new(tokenizer);
+    let mut parser = Parser::new(tokenizer).map_err(|e| e)?;
     parser.parse()
 }
 

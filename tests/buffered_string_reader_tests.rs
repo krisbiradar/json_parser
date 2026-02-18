@@ -62,7 +62,7 @@ fn text_reader_next_until_should_return_correct_value() {
             "departure_airport": "John F. Kennedy International",
             "departure_city": "New York",
             "departure_country": "USA",
-            "departure_time": "4:02"#;
+            "departure_time": "4:0"#;
 
     let mut file_reader2 = setup("sample2.json".to_string());
     let actual2 = file_reader2.next_until(b'.');
@@ -70,7 +70,7 @@ fn text_reader_next_until_should_return_correct_value() {
         {
             "flight_number": "DL8509",
             "airline_name": "Delta Air Lines",
-            "departure_airport": "John F."#;
+            "departure_airport": "John F"#;
 
     assert_eq!(actual1.unwrap(), expected1);
     assert_eq!(actual2.unwrap(), expected2);

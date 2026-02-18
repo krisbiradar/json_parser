@@ -6,140 +6,313 @@ use std::collections::HashMap;
 
 // NEW CODE — ADDITION
 pub struct Parser {
-    tokenizer: Tokenizer,
+    tokens: Vec<Token>,
+    current_idx: usize,
+}
+
+enum Container {
+    Object(HashMap<String, JsonValue>, Option<String>), // Map, Pending Key
+    Array(Vec<JsonValue>),
+}
+
+#[derive(PartialEq)]
+enum ParserState {
+    ExpectValue,
+    ExpectKey,
+    ExpectColon,
+    ExpectCommaOrEnd,
 }
 
 impl Parser {
-    pub fn new(tokenizer: Tokenizer) -> Self {
-        Self { tokenizer }
+    pub fn new(mut tokenizer: Tokenizer) -> Result<Self, String> {
+        tokenizer.tokenize()?;
+        let mut tokens: Vec<Token> = tokenizer
+            .fsm
+            .all_tokens
+            .iter()
+            .map(|(_, v)| v.clone())
+            .collect();
+        tokens.sort_by_key(|t| t.token_idx());
+        
+        Ok(Self {
+            tokens,
+            current_idx: 0,
+        })
     }
 
     pub fn parse(&mut self) -> Result<JsonValue, String> {
-        let token = self.tokenizer.next_token()?;
-        // JSON must start with an Object or Array (RFC 4627), though newer standards allow any value.
-        // We will support any value for flexibility, but typically it's { or [.
-        self.parse_value_from_token(token)
-    }
-
-    fn parse_value(&mut self) -> Result<JsonValue, String> {
-        let token = self.tokenizer.next_token()?;
-        self.parse_value_from_token(token)
-    }
-
-    fn parse_value_from_token(&mut self, token: Token) -> Result<JsonValue, String> {
-        match token.token_type() {
-            TokenType::LeftBrace => self.parse_object(),
-            TokenType::LeftSquareBracket => self.parse_array(),
-            TokenType::DoubleQuote => {
-                let val = self.extract_string_value(token)?;
-                Ok(JsonValue::String(val))
-            }
-            TokenType::Number => {
-                let val_str = self.extract_string_value(token)?;
-                let num = val_str.parse::<f64>().map_err(|_| "Invalid number format".to_string())?;
-                Ok(JsonValue::Number(num))
-            }
-            TokenType::Boolean => {
-                let val_str = self.extract_string_value(token)?;
-                let bool_val = val_str.parse::<bool>().map_err(|_| "Invalid boolean format".to_string())?;
-                Ok(JsonValue::Boolean(bool_val))
-            }
-            TokenType::Null => Ok(JsonValue::Null),
-            _ => Err(format!("Unexpected token: {:?}", token.token_type())),
+        if self.tokens.is_empty() {
+             return Ok(JsonValue::Null);
         }
-    }
 
-    fn parse_object(&mut self) -> Result<JsonValue, String> {
-        let mut map = HashMap::new();
+        let mut stack: Vec<Container> = Vec::new();
+        let mut state = ParserState::ExpectValue;
+        let mut root_value: Option<JsonValue> = None;
 
-        // Check if empty object
-        // We need to peek or read. Since we can't peek easily, we read.
-        // If it's '}', we are done.
-        // If it's a Key, we process.
-        
-        loop {
-            let token = self.tokenizer.next_token()?;
-            
-            if token.token_type() == TokenType::RightBrace {
-                if !map.is_empty() {
-                     // If we have items, we expect a comma before the next item, 
-                     // but the loop structure below handles comma checks.
-                     // If we hit '}' here, it means we either had an empty object "{}"
-                     // or we just finished a value and saw '}'.
-                     // However, the loop logic below consumes the comma.
-                     // So if we are here, it's likely the first iteration (empty object).
+        while self.current_idx < self.tokens.len() {
+            let token = &self.tokens[self.current_idx];
+            let token_type = token.token_type();
+
+            match state {
+                ParserState::ExpectValue => {
+                    match token_type {
+                        TokenType::LeftBrace => {
+                            stack.push(Container::Object(HashMap::new(), None));
+                            state = ParserState::ExpectKey;
+                            self.advance();
+                        }
+                        TokenType::LeftSquareBracket => {
+                            stack.push(Container::Array(Vec::new()));
+                            state = ParserState::ExpectValue; // Array expects value (or end) next
+                            self.advance();
+                        }
+                        TokenType::Text | TokenType::Number | TokenType::Boolean | TokenType::Null => {
+                             let val = self.token_to_value(token)?;
+                             self.advance();
+                             self.insert_value(&mut stack, &mut root_value, val)?;
+                             state = ParserState::ExpectCommaOrEnd;
+                             if stack.is_empty() {
+                                 // Done.
+                             }
+                        }
+                        TokenType::RightSquareBracket => {
+                            // Valid only if we are in an Array and it's empty "[]"
+                            if let Some(Container::Array(vec)) = stack.last() {
+                                if vec.is_empty() {
+                                    let container = stack.pop().unwrap();
+                                    let val = self.container_to_value(container);
+                                    self.insert_value(&mut stack, &mut root_value, val)?;
+                                    self.advance();
+                                    state = ParserState::ExpectCommaOrEnd;
+                                } else {
+                                     return Err("Trailing comma in array".to_string());
+                                }
+                            } else {
+                                return Err(format!("Unexpected token: {:?}", token_type));
+                            }
+                        }
+                        // RightBrace handled in ExpectKey for empty object
+                        TokenType::RightBrace => {
+                             if let Some(Container::Object(_, _)) = stack.last() {
+                                return Err(format!("Unexpected token: {:?}", token_type)); 
+                             } else {
+                                 return Err(format!("Unexpected token: {:?}", token_type));
+                             }
+                        }
+                        _ => return Err(format!("Unexpected token: {:?}", token_type)),
+                    }
                 }
-                break;
+                ParserState::ExpectKey => {
+                     match token_type {
+                         TokenType::Text => {
+                             let key = self.extract_string_value(token)?;
+                             if let Some(Container::Object(_, pending_key)) = stack.last_mut() {
+                                 *pending_key = Some(key);
+                             } else {
+                                 return Err("Internal Error: ExpectKey but not in Object".to_string());
+                             }
+                             self.advance();
+                             state = ParserState::ExpectColon;
+                         }
+                         TokenType::RightBrace => {
+                             // Empty object or End of object
+                             if let Some(Container::Object(map, _)) = stack.last() {
+                                 if map.is_empty() {
+                                     let container = stack.pop().unwrap();
+                                     let val = self.container_to_value(container);
+                                     self.insert_value(&mut stack, &mut root_value, val)?;
+                                     self.advance();
+                                     state = ParserState::ExpectCommaOrEnd;
+                                 } else {
+                                     return Err("Trailing comma in object".to_string());
+                                 }
+                             } else {
+                                 return Err(format!("Unexpected token: {:?}", token_type));
+                             }
+                         }
+                         _ => return Err(format!("Expected Object Key or '}}', found {:?}", token_type)),
+                     }
+                }
+                ParserState::ExpectColon => {
+                    match token_type {
+                        TokenType::Colon => {
+                            self.advance();
+                            state = ParserState::ExpectValue;
+                        }
+                        _ => return Err(format!("Expected ':', found {:?}", token_type)),
+                    }
+                }
+                ParserState::ExpectCommaOrEnd => {
+                    match token_type {
+                        TokenType::Comma => {
+                            self.advance();
+                            // If in Object -> ExpectKey.
+                            // If in Array -> ExpectValue.
+                            // If Root -> Error (Trailing comma not allowed at root, nor multiple values).
+                            if let Some(container) = stack.last() {
+                                match container {
+                                    Container::Object(_, _) => state = ParserState::ExpectKey,
+                                    Container::Array(_) => state = ParserState::ExpectValue,
+                                }
+                            } else {
+                                return Err("Unexpected comma at root".to_string());
+                            }
+                        }
+                        TokenType::RightBrace => {
+                             if let Some(Container::Object(_, _)) = stack.last() {
+                                 let container = stack.pop().unwrap();
+                                 let val = self.container_to_value(container);
+                                 self.insert_value(&mut stack, &mut root_value, val)?;
+                                 self.advance();
+                                 // Stay in ExpectCommaOrEnd because we just finished a value (the object)
+                             } else {
+                                 return Err(format!("Unexpected '}}', found {:?}", token_type));
+                             }
+                        }
+                        TokenType::RightSquareBracket => {
+                             if let Some(Container::Array(_)) = stack.last() {
+                                 let container = stack.pop().unwrap();
+                                 let val = self.container_to_value(container);
+                                 self.insert_value(&mut stack, &mut root_value, val)?;
+                                 self.advance();
+                                 // Stay in ExpectCommaOrEnd
+                             } else {
+                                 return Err(format!("Unexpected ']', found {:?}", token_type));
+                             }
+                        }
+                        TokenType::EOF => {
+                            if stack.is_empty() {
+                                break;
+                            } else {
+                                return Err("Unexpected EOF".to_string());
+                            }
+                        }
+                        _ => return Err(format!("Expected ',' or '}}' or ']', found {:?}", token_type)),
+                    }
+                }
             }
-
-            // Expect Key
-            if token.token_type() != TokenType::DoubleQuote {
-                return Err(format!("Expected Object Key (String), found {:?}", token.token_type()));
-            }
-            let key = self.extract_string_value(token)?;
-
-            // Expect Colon
-            let colon = self.tokenizer.next_token()?;
-            if colon.token_type() != TokenType::Colon {
-                return Err(format!("Expected ':', found {:?}", colon.token_type()));
-            }
-
-            // Parse Value
-            let value = self.parse_value()?;
-            map.insert(key, value);
-
-            // Expect Comma or End
-            let next = self.tokenizer.next_token()?;
-            match next.token_type() {
-                TokenType::Comma => continue, // Loop again for next key
-                TokenType::RightBrace => break, // Done
-                _ => return Err(format!("Expected ',' or '}}', found {:?}", next.token_type())),
+            
+            // Allow one iteration to process insertion which might empty stack
+            if stack.is_empty() && root_value.is_some() && state == ParserState::ExpectCommaOrEnd {
+                 // Check next token is EOF
+                 if self.current_idx < self.tokens.len() {
+                      let next = &self.tokens[self.current_idx];
+                      if next.token_type() != TokenType::EOF {
+                          return Err(format!("Unexpected token after root value: {:?}", next.token_type()));
+                      }
+                 }
+                 break;
             }
         }
 
-        Ok(JsonValue::Object(map))
+        root_value.ok_or("No JSON value found".to_string())
     }
 
-    fn parse_array(&mut self) -> Result<JsonValue, String> {
-        let mut vec = Vec::new();
-
-        // Check for empty array or first element
-        // Similar logic: read token. If ']', empty. Else, put back or parse.
-        // Since we can't put back, we handle the first element specifically or use a loop that handles the start.
-        
-        // We'll read the first token to check for empty array.
-        // If not empty, we parse it as a value, then loop for commas.
-        
-        let first_token = self.tokenizer.next_token()?;
-        if first_token.token_type() == TokenType::RightSquareBracket {
-            return Ok(JsonValue::Array(vec));
-        }
-
-        // Parse first element
-        vec.push(self.parse_value_from_token(first_token)?);
-
-        loop {
-            let next = self.tokenizer.next_token()?;
-            match next.token_type() {
-                TokenType::Comma => {
-                    // Expect another value
-                    let val = self.parse_value()?;
+    fn insert_value(&self, stack: &mut Vec<Container>, root: &mut Option<JsonValue>, val: JsonValue) -> Result<(), String> {
+        if let Some(container) = stack.last_mut() {
+            match container {
+                Container::Object(map, pending_key) => {
+                    let key = pending_key.take().ok_or("Missing key for object value".to_string())?;
+                    map.insert(key, val);
+                }
+                Container::Array(vec) => {
                     vec.push(val);
                 }
-                TokenType::RightSquareBracket => break,
-                _ => return Err(format!("Expected ',' or ']', found {:?}", next.token_type())),
             }
+        } else {
+            *root = Some(val);
         }
+        Ok(())
+    }
 
-        Ok(JsonValue::Array(vec))
+    fn container_to_value(&self, container: Container) -> JsonValue {
+        match container {
+            Container::Object(map, _) => JsonValue::Object(map),
+            Container::Array(vec) => JsonValue::Array(vec),
+        }
+    }
+
+    fn token_to_value(&self, token: &Token) -> Result<JsonValue, String> {
+        // Assume correct token type (scalar)
+        match token.token_type() {
+             TokenType::Text => {
+                 let val = self.extract_string_value(token)?;
+                 Ok(JsonValue::String(val))
+             }
+             TokenType::Number => {
+                 let val_str = self.extract_string_value(token)?;
+                 let num = val_str.parse::<f64>().map_err(|_| "Invalid number format".to_string())?;
+                 Ok(JsonValue::Number(num))
+             }
+             TokenType::Boolean => {
+                 let val_str = self.extract_string_value(token)?;
+                 let bool_val = val_str.parse::<bool>().map_err(|_| "Invalid boolean format".to_string())?;
+                 Ok(JsonValue::Boolean(bool_val))
+             }
+             TokenType::Null => Ok(JsonValue::Null),
+             _ => Err(format!("Not a scalar token: {:?}", token.token_type())),
+        }
+    }
+
+    fn advance(&mut self) {
+        if self.current_idx < self.tokens.len() {
+            self.current_idx += 1;
+        }
     }
 
     // Helper to extract string from Token's Any box
-    fn extract_string_value(&self, token: Token) -> Result<String, String> {
-        // This requires accessing the private `value` field of Token. 
-        // Since Token struct definition is in core/token.rs, we might need a getter there.
-        // Assuming we can add a getter or access it if we change visibility.
-        // For now, I will assume I can modify Token to make value public or add a helper.
-        token.get_value_as_string().ok_or_else(|| "Token has no value".to_string())
+    fn extract_string_value(&self, token: &Token) -> Result<String, String> {
+        let raw = token.get_value_as_string().ok_or_else(|| "Token has no value".to_string())?;
+        
+        // If it's just a Number/Boolean/Null, return as is (they store string rep)
+        match token.token_type() {
+             TokenType::Text => {
+                 // Handle escapes
+                 self.unescape_string(&raw)
+             },
+             _ => Ok(raw),
+        }
+    }
+
+    fn unescape_string(&self, raw: &str) -> Result<String, String> {
+        let mut out = String::with_capacity(raw.len());
+        let mut chars = raw.chars().peekable();
+        
+        while let Some(c) = chars.next() {
+            if c == '\\' {
+                match chars.next() {
+                    Some('"') => out.push('"'),
+                    Some('\\') => out.push('\\'),
+                    Some('/') => out.push('/'),
+                    Some('b') => out.push('\x08'),
+                    Some('f') => out.push('\x0c'),
+                    Some('n') => out.push('\n'),
+                    Some('r') => out.push('\r'),
+                    Some('t') => out.push('\t'),
+                    Some('u') => {
+                        // Unicode 4 hex digits
+                        let mut hex = String::new();
+                        for _ in 0..4 {
+                            if let Some(h) = chars.next() {
+                                hex.push(h);
+                            } else {
+                                return Err("Incomplete unicode escape".to_string());
+                            }
+                        }
+                        let code_point = u32::from_str_radix(&hex, 16).map_err(|_| format!("Invalid unicode escape: \\u{}", hex))?;
+                         if let Some(ch) = std::char::from_u32(code_point) {
+                             out.push(ch);
+                         } else {
+                             return Err(format!("Invalid unicode scalar: \\u{}", hex));
+                         }
+                    }
+                    Some(other) => return Err(format!("Invalid escape sequence: \\{}", other)),
+                    None => return Err("Unexpected end of string in escape sequence".to_string()),
+                }
+            } else {
+                out.push(c);
+            }
+        }
+        Ok(out)
     }
 }

@@ -23,21 +23,21 @@ impl BufferedStringReader {
 }
 impl ByteReader for BufferedStringReader {
     fn next_byte(&mut self) -> Result<u8, String> {
-        self.throw_if_consumed().unwrap();
+        self.throw_if_consumed()?;
         let res = self.value[self.offset];
         self.offset += 1;
         Ok(res)
     }
 
     fn next_chunk(&mut self) -> Result<Vec<u8>, String> {
-        self.throw_if_consumed().unwrap();
+        self.throw_if_consumed()?;
         let end = (self.offset + self.chunk_size).min(self.value.len());
         let res = self.value[self.offset..end].to_vec();
         self.offset = end;
         Ok(res)
     }
     fn next_until(&mut self, byte: u8) -> Result<Vec<u8>, String> {
-        self.throw_if_consumed().unwrap();
+        self.throw_if_consumed()?;
         if let Some(pos) = memchr(byte, &self.value[self.offset..]) {
             let end = self.offset + pos;
             let res = self.value[self.offset..end].to_vec();
