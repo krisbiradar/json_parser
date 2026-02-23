@@ -4,7 +4,7 @@ use crate::{
 };
 use std::collections::HashMap;
 
-// NEW CODE — ADDITION
+
 pub struct Parser {
     tokens: Vec<Token>,
     current_idx: usize,

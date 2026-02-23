@@ -29,6 +29,11 @@ impl ByteReader for BufferedStringReader {
         Ok(res)
     }
 
+    fn peek_byte(&mut self) -> Result<u8, String> {
+        self.throw_if_consumed()?;
+        Ok(self.value[self.offset])
+    }
+
     fn next_chunk(&mut self) -> Result<Vec<u8>, String> {
         self.throw_if_consumed()?;
         let end = (self.offset + self.chunk_size).min(self.value.len());

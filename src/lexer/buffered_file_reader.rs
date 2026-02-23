@@ -60,6 +60,15 @@ impl ByteReader for BufferedFileReader {
 
         return Ok(b);
     }
+
+    fn peek_byte(&mut self) -> Result<u8, String> {
+        self.throw_if_consumed().unwrap();
+        let buff = self.reader.as_mut().unwrap().fill_buf().ok();
+        if buff.unwrap().is_empty() {
+            return Err("The stream has ended".to_string());
+        }
+        return Ok(buff.unwrap()[0]);
+    }
     fn offset(&mut self) -> usize {
         return self.offset;
     }

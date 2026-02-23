@@ -163,17 +163,25 @@ impl Tokenizer {
     fn handle_boolean(&mut self, first_char: u8) -> Result<Token, String> {
         self.reader.skip_white_space();
         let start_pos = self.reader.offset() - 1;
-        let mut bytes = self.reader.next_until_any(&[b',', b']', b'}'])?;
-        bytes.insert(0, first_char);
+        
+        let mut bytes = vec![first_char];
+        while let Ok(b) = self.reader.peek_byte() {
+            if b.is_ascii_alphabetic() {
+                bytes.push(b);
+                let _ = self.reader.next_byte();
+            } else {
+                break;
+            }
+        }
 
-        let s = String::from_utf8_lossy(&bytes).trim().to_lowercase();
+        let s = String::from_utf8_lossy(&bytes).to_lowercase();
 
         if s == "true" || s == "false" {
             let token = Token::with_value(
                 TokenType::Boolean,
                 start_pos,
                 self.fsm.current_token_idx,
-                s.to_string(),
+                s,
             );
             self.fsm
                 .all_tokens
@@ -188,17 +196,25 @@ impl Tokenizer {
     fn handle_null(&mut self, first_char: u8) -> Result<Token, String> {
         self.reader.skip_white_space();
         let start_pos = self.reader.offset() - 1;
-        let mut bytes = self.reader.next_until_any(&[b',', b']', b'}'])?;
-        bytes.insert(0, first_char);
+        
+        let mut bytes = vec![first_char];
+        while let Ok(b) = self.reader.peek_byte() {
+            if b.is_ascii_alphabetic() {
+                bytes.push(b);
+                let _ = self.reader.next_byte();
+            } else {
+                break;
+            }
+        }
 
-        let s = String::from_utf8_lossy(&bytes).trim().to_lowercase();
+        let s = String::from_utf8_lossy(&bytes).to_lowercase();
 
         if s == "null" {
             let token = Token::with_value(
                 TokenType::Null,
                 start_pos,
                 self.fsm.current_token_idx,
-                s.to_string(),
+                s,
             );
             self.fsm
                 .all_tokens
