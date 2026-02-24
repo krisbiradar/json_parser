@@ -1,6 +1,6 @@
+use json_parser::core::json_value::JsonValue;
 use json_parser::lexer::tokenizer::Tokenizer;
 use json_parser::parser::parser::Parser;
-use json_parser::core::json_value::JsonValue;
 
 fn parse_str(json: &str) -> Result<JsonValue, String> {
     let tokenizer = Tokenizer::new(Some(json.to_string()), None);
@@ -25,7 +25,10 @@ fn test_simple_object() {
     let res = parse_str(r#"{"key": "value", "num": 123, "bool": true, "nothing": null}"#);
     match res {
         Ok(JsonValue::Object(map)) => {
-            assert_eq!(map.get("key"), Some(&JsonValue::String("value".to_string())));
+            assert_eq!(
+                map.get("key"),
+                Some(&JsonValue::String("value".to_string()))
+            );
             assert_eq!(map.get("num"), Some(&JsonValue::Number(123.0)));
             assert_eq!(map.get("bool"), Some(&JsonValue::Boolean(true)));
             assert_eq!(map.get("nothing"), Some(&JsonValue::Null));
@@ -105,7 +108,10 @@ fn test_array_of_different_types() {
         assert_eq!(vec[2], JsonValue::Boolean(true));
         assert_eq!(vec[3], JsonValue::Null);
         if let JsonValue::Object(map) = &vec[4] {
-            assert_eq!(map.get("key"), Some(&JsonValue::String("value".to_string())));
+            assert_eq!(
+                map.get("key"),
+                Some(&JsonValue::String("value".to_string()))
+            );
         } else {
             panic!("Expected object at index 4");
         }

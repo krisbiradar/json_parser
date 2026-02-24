@@ -34,7 +34,6 @@ impl FSM {
             return Some(self.all_tokens[&(self.current_token_idx)].clone());
         }
     }
-    
 }
 pub enum FSMQuoteState {
     KeyStart,

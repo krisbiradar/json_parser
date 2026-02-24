@@ -1,6 +1,8 @@
-# JSON Parser
+# parse_light
 
-A lightweight and extensible **JSON parser** built as a hobby project, with the goal of evolving it into a **production-ready, well-tested, and performant** library.
+[![Crates.io](https://img.shields.io/crates/v/parse_light.svg)](https://crates.io/crates/parse_light)
+
+A lightweight and extensible **JSON parser** available at [https://crates.io/crates/parse_light](https://crates.io/crates/parse_light). Built as a hobby project, with the goal of evolving it into a **production-ready, well-tested, and performant** library.
 
 This project focuses on understanding JSON parsing internals, building clean abstractions, and gradually improving reliability, performance, and developer experience.
 

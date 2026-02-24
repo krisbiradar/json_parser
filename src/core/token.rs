@@ -46,14 +46,18 @@ impl Token {
     pub fn get_value_as_string(&self) -> Option<String> {
         self.value.clone()
     }
-    
+
     pub fn value(&self) -> Option<&String> {
         self.value.as_ref()
     }
-    
+
     pub fn to_string(&self) -> String {
         match self.token_type {
-            TokenType::DoubleQuote | TokenType::Number | TokenType::Boolean | TokenType::Null | TokenType::Text => {
+            TokenType::DoubleQuote
+            | TokenType::Number
+            | TokenType::Boolean
+            | TokenType::Null
+            | TokenType::Text => {
                 if let Some(ref val) = self.value {
                     return val.clone();
                 }
@@ -62,5 +66,4 @@ impl Token {
             _ => format!("{}", self.token_type),
         }
     }
-
 }

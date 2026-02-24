@@ -6,5 +6,5 @@ pub trait ByteReader {
     fn next_until_any(&mut self, bytes: &[u8]) -> Result<Vec<u8>, String>;
     fn skip_white_space(&mut self);
     fn offset(&mut self) -> usize;
-    fn throw_if_consumed(& mut self) -> Result<(), String>;
+    fn throw_if_consumed(&mut self) -> Result<(), String>;
 }

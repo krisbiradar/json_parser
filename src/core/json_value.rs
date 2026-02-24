@@ -55,7 +55,7 @@ impl JsonValue {
                     stringer.push('"');
                     Self::escape_string(key, stringer);
                     stringer.push_str("\":");
-                    
+
                     if let Some(val) = obj.get(*key) {
                         val.format_into(stringer);
                     }

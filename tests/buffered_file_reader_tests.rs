@@ -1,5 +1,5 @@
-use std::path::PathBuf;
 use json_parser::lexer::{buffered_file_reader::BufferedFileReader, byte_reader::ByteReader};
+use std::path::PathBuf;
 #[test]
 fn file_reader_next_byte_should_return_correct_value() {
     let mut file_reader1 = setup("sample1.json");
@@ -61,7 +61,7 @@ fn file_reader_next_until_should_return_correct_values() {
     assert_eq!(actual1.unwrap(), expected1);
     let mut file_reader2 = setup("sample2.json").with_chunk_size(100);
     let actual2 = file_reader2.next_until(b'.');
-    let expected2  = br#"[
+    let expected2 = br#"[
         {
             "flight_number": "DL8509",
             "airline_name": "Delta Air Lines",

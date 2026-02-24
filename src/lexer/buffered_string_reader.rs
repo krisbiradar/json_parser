@@ -46,13 +46,13 @@ impl ByteReader for BufferedStringReader {
         if let Some(pos) = memchr(byte, &self.value[self.offset..]) {
             let end = self.offset + pos;
             let res = self.value[self.offset..end].to_vec();
-            self.offset = end ;
+            self.offset = end;
             Ok(res)
         } else {
             Err("the requested byte sequence is not found".to_string())
         }
     }
-    
+
     fn next_until_any(&mut self, bytes: &[u8]) -> Result<Vec<u8>, String> {
         self.throw_if_consumed()?;
         let mut min_pos = None;
@@ -81,7 +81,7 @@ impl ByteReader for BufferedStringReader {
             Ok(result)
         }
     }
-    
+
     fn skip_white_space(&mut self) {
         while self.offset < self.value.len() {
             let b = self.value[self.offset];
@@ -93,11 +93,11 @@ impl ByteReader for BufferedStringReader {
         }
     }
 
-    fn offset(& mut self) -> usize {
+    fn offset(&mut self) -> usize {
         return self.offset;
     }
-    fn throw_if_consumed(& mut self )->Result<(),String>{
-        if(self.offset >=self.value.len()){
+    fn throw_if_consumed(&mut self) -> Result<(), String> {
+        if (self.offset >= self.value.len()) {
             return Err("Input text is consumed".to_string());
         }
         Ok(())

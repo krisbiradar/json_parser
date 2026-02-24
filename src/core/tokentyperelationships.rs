@@ -13,7 +13,11 @@ impl TokenTypeRelationShips {
             TokenType::EOF,
         ],
         // 1: LeftBrace (Start of Object) -> DoubleQuote (Key), RightBrace (Empty)
-        &[TokenType::DoubleQuote, TokenType::RightBrace, TokenType::Text],
+        &[
+            TokenType::DoubleQuote,
+            TokenType::RightBrace,
+            TokenType::Text,
+        ],
         // 2: RightSquareBracket (End of Array) -> Comma, RightBrace, RightSquareBracket, EOF
         &[
             TokenType::Comma,
@@ -50,7 +54,13 @@ impl TokenTypeRelationShips {
             TokenType::Null,
         ],
         // 6: Text -> Invalid usually, but if parsed as Bool/Null, see below.
-        &[TokenType::Colon, TokenType::Comma, TokenType::RightBrace, TokenType::RightSquareBracket, TokenType::EOF],
+        &[
+            TokenType::Colon,
+            TokenType::Comma,
+            TokenType::RightBrace,
+            TokenType::RightSquareBracket,
+            TokenType::EOF,
+        ],
         // 7: Null -> Comma, RightBrace, RightSquareBracket
         &[
             TokenType::Comma,
@@ -107,7 +117,10 @@ impl TokenTypeRelationShips {
             &[]
         }
     }
-    pub fn is_valid_token_sequence(first: Option<&Token>, second: Option<&Token>) -> Result<bool, String> {
+    pub fn is_valid_token_sequence(
+        first: Option<&Token>,
+        second: Option<&Token>,
+    ) -> Result<bool, String> {
         match (first, second) {
             (Some(f), Some(s)) => {
                 let idx = f.token_type() as usize;
@@ -116,17 +129,27 @@ impl TokenTypeRelationShips {
                     if is_valid {
                         Ok(true)
                     } else {
-                        Err(format!("Invalid token sequence: {} -> {}", f.token_type(), s.token_type()))
+                        Err(format!(
+                            "Invalid token sequence: {} -> {}",
+                            f.token_type(),
+                            s.token_type()
+                        ))
                     }
                 } else {
                     Err(format!("Unknown token type: {}", f.token_type()))
                 }
             }
             (None, Some(s)) => {
-                if matches!(s.token_type(), TokenType::LeftBrace | TokenType::LeftSquareBracket) {
+                if matches!(
+                    s.token_type(),
+                    TokenType::LeftBrace | TokenType::LeftSquareBracket
+                ) {
                     Ok(true)
                 } else {
-                    Err(format!("JSON must start with {{ or [, found {}", s.token_type()))
+                    Err(format!(
+                        "JSON must start with {{ or [, found {}",
+                        s.token_type()
+                    ))
                 }
             }
             _ => Err("Invalid token sequence: missing tokens".to_string()),

@@ -83,8 +83,7 @@ impl Tokenizer {
                 TokenTypeRelationShips::is_valid_token_sequence(
                     self.fsm.last_token().as_ref(),
                     Some(&token),
-                )
-                ?;
+                )?;
                 self.fsm
                     .all_tokens
                     .insert(self.fsm.current_token_idx, token.clone());
@@ -122,7 +121,7 @@ impl Tokenizer {
                         let b = self.reader.next_until(b'"')?;
                         output.extend_from_slice(&b);
                         self.reader.next_byte()?; // Consume quote
-                        
+
                         let mut backslash_count = 0;
                         for &byte in output.iter().rev() {
                             if byte == b'\\' {
@@ -133,7 +132,7 @@ impl Tokenizer {
                         }
 
                         if backslash_count % 2 == 1 {
-                             output.push(b'"');
+                            output.push(b'"');
                         } else {
                             break;
                         }
@@ -163,7 +162,7 @@ impl Tokenizer {
     fn handle_boolean(&mut self, first_char: u8) -> Result<Token, String> {
         self.reader.skip_white_space();
         let start_pos = self.reader.offset() - 1;
-        
+
         let mut bytes = vec![first_char];
         while let Ok(b) = self.reader.peek_byte() {
             if b.is_ascii_alphabetic() {
@@ -177,12 +176,8 @@ impl Tokenizer {
         let s = String::from_utf8_lossy(&bytes).to_lowercase();
 
         if s == "true" || s == "false" {
-            let token = Token::with_value(
-                TokenType::Boolean,
-                start_pos,
-                self.fsm.current_token_idx,
-                s,
-            );
+            let token =
+                Token::with_value(TokenType::Boolean, start_pos, self.fsm.current_token_idx, s);
             self.fsm
                 .all_tokens
                 .insert(self.fsm.current_token_idx, token.clone());
@@ -196,7 +191,7 @@ impl Tokenizer {
     fn handle_null(&mut self, first_char: u8) -> Result<Token, String> {
         self.reader.skip_white_space();
         let start_pos = self.reader.offset() - 1;
-        
+
         let mut bytes = vec![first_char];
         while let Ok(b) = self.reader.peek_byte() {
             if b.is_ascii_alphabetic() {
@@ -210,12 +205,8 @@ impl Tokenizer {
         let s = String::from_utf8_lossy(&bytes).to_lowercase();
 
         if s == "null" {
-            let token = Token::with_value(
-                TokenType::Null,
-                start_pos,
-                self.fsm.current_token_idx,
-                s,
-            );
+            let token =
+                Token::with_value(TokenType::Null, start_pos, self.fsm.current_token_idx, s);
             self.fsm
                 .all_tokens
                 .insert(self.fsm.current_token_idx, token.clone());
@@ -234,12 +225,7 @@ impl Tokenizer {
 
         let s = String::from_utf8_lossy(&bytes).trim().to_string();
 
-        let token = Token::with_value(
-            TokenType::Number,
-            start_pos,
-            self.fsm.current_token_idx,
-            s,
-        );
+        let token = Token::with_value(TokenType::Number, start_pos, self.fsm.current_token_idx, s);
         self.fsm
             .all_tokens
             .insert(self.fsm.current_token_idx, token.clone());
@@ -254,18 +240,18 @@ impl Tokenizer {
         loop {
             let b = self.reader.next_until(b'"')?;
             output.extend_from_slice(&b);
-            
+
             // We are at '"'. Consume it.
             self.reader.next_byte()?;
-            
+
             // Check if this quote is escaped by counting trailing backslashes in the output so far.
             // Escape sequence \\ is a backslash. \" is a quote.
             // So if we have odd number of backslashes at the end of `output` (before the quote we just found but that quote isn't in output yet, wait).
-            // `output` contains content BEFORE the quote. 
+            // `output` contains content BEFORE the quote.
             // If `output` ends in odd backslashes, the quote is escaped.
             // Example: `abc\"` -> output `abc\`. Ends in 1 backslash. Escaped.
             // Example: `abc\\"` -> output `abc\\`. Ends in 2 backslashes. Not escaped (backslash is escaped).
-            
+
             let mut backslash_count = 0;
             for &byte in output.iter().rev() {
                 if byte == b'\\' {
@@ -287,12 +273,7 @@ impl Tokenizer {
         }
 
         let s = String::from_utf8(output).map_err(|e| e.to_string())?;
-        let token = Token::with_value(
-            TokenType::Text,
-            start_pos,
-            self.fsm.current_token_idx,
-            s,
-        );
+        let token = Token::with_value(TokenType::Text, start_pos, self.fsm.current_token_idx, s);
 
         TokenTypeRelationShips::is_valid_token_sequence(
             self.fsm.last_token().as_ref(),

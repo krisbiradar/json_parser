@@ -1,11 +1,13 @@
+use json_parser::core::token::Token;
 use json_parser::core::tokentype::TokenType;
 use json_parser::lexer::tokenizer::Tokenizer;
-use json_parser::core::token::Token;
 
 // Helper to collect tokens using the Iterator interface
 fn tokenize(json: &str) -> Vec<Token> {
     let tokenizer = Tokenizer::new(Some(json.to_string()), None);
-    tokenizer.collect::<Result<Vec<Token>, String>>().expect("Tokenization failed")
+    tokenizer
+        .collect::<Result<Vec<Token>, String>>()
+        .expect("Tokenization failed")
 }
 
 #[test]
@@ -29,7 +31,7 @@ fn test_tokenize_empty_array() {
 #[test]
 fn test_tokenize_simple_object() {
     let tokens = tokenize(r#"{ "key" : "value" }"#);
-    
+
     assert_eq!(tokens.len(), 6);
     assert_eq!(tokens[0].token_type(), TokenType::LeftBrace);
     assert_eq!(tokens[1].token_type(), TokenType::Text);
@@ -51,16 +53,28 @@ fn test_tokenize_all_types() {
     let tokens = tokenize(json);
 
     // Validate specific values
-    let number_token = tokens.iter().find(|t| t.token_type() == TokenType::Number).unwrap();
+    let number_token = tokens
+        .iter()
+        .find(|t| t.token_type() == TokenType::Number)
+        .unwrap();
     assert_eq!(number_token.get_value_as_string().unwrap(), "123.45");
-    
-    let minus_sign_token = tokens.iter().find(|t| t.token_type() == TokenType::MinusSign).unwrap();
+
+    let minus_sign_token = tokens
+        .iter()
+        .find(|t| t.token_type() == TokenType::MinusSign)
+        .unwrap();
     assert_eq!(minus_sign_token.token_type(), TokenType::MinusSign);
 
-    let bool_token = tokens.iter().find(|t| t.token_type() == TokenType::Boolean).unwrap();
+    let bool_token = tokens
+        .iter()
+        .find(|t| t.token_type() == TokenType::Boolean)
+        .unwrap();
     assert_eq!(bool_token.get_value_as_string().unwrap(), "true");
 
-    let null_token = tokens.iter().find(|t| t.token_type() == TokenType::Null).unwrap();
+    let null_token = tokens
+        .iter()
+        .find(|t| t.token_type() == TokenType::Null)
+        .unwrap();
     // Null token might have "null" as value string depending on implementation
     assert_eq!(null_token.get_value_as_string().unwrap(), "null");
 }
@@ -79,12 +93,12 @@ fn test_string_with_escapes() {
 fn test_invalid_token() {
     let json = r#"{ "key": value }"#; // value is not in quotes
     let mut tokenizer = Tokenizer::new(Some(json.to_string()), None);
-    
+
     // Consume valid tokens
     assert!(tokenizer.next().unwrap().is_ok()); // {
     assert!(tokenizer.next().unwrap().is_ok()); // "key"
     assert!(tokenizer.next().unwrap().is_ok()); // :
-    
+
     // Expect error on 'v'
     let err = tokenizer.next();
     assert!(err.expect("Expected an error").is_err());
@@ -101,9 +115,9 @@ fn test_complex_object() {
             "street": "123 Main St",
             "city": "New York"
         }
-    }"#;    
+    }"#;
     let tokens = tokenize(json);
-    
+
     assert_eq!(tokens[0].token_type(), TokenType::LeftBrace);
     assert_eq!(tokens[1].token_type(), TokenType::Text);
     assert_eq!(tokens[1].get_value_as_string().unwrap(), "name");
