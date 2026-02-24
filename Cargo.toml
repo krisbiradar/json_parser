@@ -1,7 +1,10 @@
 [package]
-name = "json_parser"
+name = "parse_light"
 version = "0.1.0"
 edition = "2024"
+description = "A simple, customizable, and lightweight JSON parser with minimal dependencies."
+license = "MIT"
+repository = "https://github.com/krisbiradar/json_parser"
 
 [dependencies]
 memchr = "2"
