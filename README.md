@@ -56,5 +56,5 @@ This project exists to:
 ### Clone the repository
 
 ```bash
-git clone https://github.com/krisbiradar/json_parser.git
-cd json_parser
+git clone https://github.com/krisbiradar/parse_light.git
+cd parse_light

@@ -1,8 +1,8 @@
 use std::fs;
 use std::path::PathBuf;
 
-use json_parser::lexer::buffered_string_reader::BufferedStringReader;
-use json_parser::lexer::byte_reader::ByteReader;
+use parse_light::lexer::buffered_string_reader::BufferedStringReader;
+use parse_light::lexer::byte_reader::ByteReader;
 
 fn setup(json_file_name: String) -> BufferedStringReader {
     let cargo_manifest_dir = env!("CARGO_MANIFEST_DIR");

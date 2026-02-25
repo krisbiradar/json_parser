@@ -1,0 +1,45 @@
+{
+    "company": "TechCorp",
+    "departments": [
+        {
+            "name": "Engineering",
+            "head": "Alice",
+            "employees": [
+                {
+                    "id": 1,
+                    "name": "Bob",
+                    "skills": [
+                        "rust",
+                        "python"
+                    ]
+                },
+                {
+                    "id": 2,
+                    "name": "Carol",
+                    "skills": [
+                        "javascript",
+                        "go"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Design",
+            "head": "Dave",
+            "employees": [
+                {
+                    "id": 3,
+                    "name": "Eve",
+                    "skills": [
+                        "figma",
+                        "css"
+                    ]
+                }
+            ]
+        }
+    ],
+    "metadata": {
+        "version": 2,
+        "generated": true
+    }
+}

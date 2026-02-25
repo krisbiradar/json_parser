@@ -49,7 +49,7 @@ impl BufferedFileReader {
 
 impl ByteReader for BufferedFileReader {
     fn next_byte(&mut self) -> Result<u8, String> {
-        self.throw_if_consumed().unwrap();
+        self.throw_if_consumed()?;
         let buff = self.reader.as_mut().unwrap().fill_buf().ok();
         if buff.unwrap().is_empty() {
             return Err("The stream has ended".to_string());
@@ -62,7 +62,7 @@ impl ByteReader for BufferedFileReader {
     }
 
     fn peek_byte(&mut self) -> Result<u8, String> {
-        self.throw_if_consumed().unwrap();
+        self.throw_if_consumed()?;
         let buff = self.reader.as_mut().unwrap().fill_buf().ok();
         if buff.unwrap().is_empty() {
             return Err("The stream has ended".to_string());
@@ -73,7 +73,7 @@ impl ByteReader for BufferedFileReader {
         return self.offset;
     }
     fn next_chunk(&mut self) -> Result<Vec<u8>, String> {
-        self.throw_if_consumed().unwrap();
+        self.throw_if_consumed()?;
         let reader = self.reader.as_mut().ok_or("reader missing")?;
 
         let mut out = Vec::with_capacity(self.chunk_size);
@@ -105,7 +105,7 @@ impl ByteReader for BufferedFileReader {
     }
 
     fn next_until(&mut self, byte: u8) -> Result<Vec<u8>, String> {
-        self.throw_if_consumed().unwrap();
+        self.throw_if_consumed()?;
         let mut response_vector: Vec<u8> = Vec::new();
         loop {
             let buff = self.reader.as_mut().unwrap().fill_buf().ok();
@@ -148,14 +148,11 @@ impl ByteReader for BufferedFileReader {
 
             let mut min_pos = None;
             for &byte in bytes {
-                // get the first occurrence of any byte in bytes and return
-                // if theres some priority in the bytes then the parameters should be sent that way itself
                 if let Some(pos) = memchr(byte, chunk) {
                     min_pos = Some(match min_pos {
                         None => pos,
                         Some(p) => pos.min(p),
                     });
-                    break;
                 }
             }
 

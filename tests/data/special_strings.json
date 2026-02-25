@@ -1,0 +1,9 @@
+{
+    "empty": "",
+    "with_spaces": "hello world",
+    "with_newline": "line1\nline2",
+    "with_tab": "col1\tcol2",
+    "with_quote": "she said \"hi\"",
+    "with_backslash": "path\\to\\file",
+    "unicode": "\u00A9 2026"
+}

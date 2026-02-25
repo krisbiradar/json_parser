@@ -1,6 +1,6 @@
-use json_parser::core::json_value::JsonValue;
-use json_parser::lexer::tokenizer::Tokenizer;
-use json_parser::parser::parser::Parser;
+use parse_light::core::json_value::JsonValue;
+use parse_light::lexer::tokenizer::Tokenizer;
+use parse_light::parser::parser::Parser;
 
 fn parse_str(json: &str) -> Result<JsonValue, String> {
     let tokenizer = Tokenizer::new(Some(json.to_string()), None);

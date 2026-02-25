@@ -1,4 +1,4 @@
-use json_parser::lexer::{buffered_file_reader::BufferedFileReader, byte_reader::ByteReader};
+use parse_light::lexer::{buffered_file_reader::BufferedFileReader, byte_reader::ByteReader};
 use std::path::PathBuf;
 #[test]
 fn file_reader_next_byte_should_return_correct_value() {

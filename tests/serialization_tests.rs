@@ -1,21 +1,21 @@
-use json_parser::{parse, stringify};
+use parse_light::{parse, stringify};
 
 #[test]
 fn test_stringify_primitives() {
     assert_eq!(
-        stringify(&json_parser::core::json_value::JsonValue::Null),
+        stringify(&parse_light::core::json_value::JsonValue::Null),
         "null"
     );
     assert_eq!(
-        stringify(&json_parser::core::json_value::JsonValue::Boolean(true)),
+        stringify(&parse_light::core::json_value::JsonValue::Boolean(true)),
         "true"
     );
     assert_eq!(
-        stringify(&json_parser::core::json_value::JsonValue::Boolean(false)),
+        stringify(&parse_light::core::json_value::JsonValue::Boolean(false)),
         "false"
     );
     assert_eq!(
-        stringify(&json_parser::core::json_value::JsonValue::Number(123.45)),
+        stringify(&parse_light::core::json_value::JsonValue::Number(123.45)),
         "123.45"
     );
 }
@@ -23,7 +23,7 @@ fn test_stringify_primitives() {
 #[test]
 fn test_stringify_strings() {
     assert_eq!(
-        stringify(&json_parser::core::json_value::JsonValue::String(
+        stringify(&parse_light::core::json_value::JsonValue::String(
             "hello".to_string()
         )),
         r#""hello""#
@@ -32,7 +32,7 @@ fn test_stringify_strings() {
     // Test escapes
     let string_with_escapes = "line1\nline2\t\"quote\" \\slash";
     let json_val =
-        json_parser::core::json_value::JsonValue::String(string_with_escapes.to_string());
+        parse_light::core::json_value::JsonValue::String(string_with_escapes.to_string());
     assert_eq!(stringify(&json_val), r#""line1\nline2\t\"quote\" \\slash""#);
 }
 

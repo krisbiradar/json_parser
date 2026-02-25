@@ -10,12 +10,13 @@ use crate::lexer::tokenizer::Tokenizer;
 use crate::parser::parser::Parser;
 
 /// Parses a valid JSON string into a `JsonValue`.
-pub fn parse(json: &str, file_path: &str) -> Result<JsonValue, String> {
+pub fn parse(json: &str) -> Result<JsonValue, String> {
     let tokenizer: Tokenizer;
     if Path::exists(Path::new(json)) {
-        tokenizer = Tokenizer::new(None, Some(file_path.to_string()));
+        tokenizer = Tokenizer::new(None, Some(json.to_string()))
+       
     } else {
-        tokenizer = Tokenizer::new(Some(json.to_string()), None)
+         tokenizer = Tokenizer::new(Some(json.to_string()), None);
     }
 
     let mut parser = Parser::new(tokenizer)?;

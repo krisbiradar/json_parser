@@ -65,7 +65,6 @@ impl ByteReader for BufferedStringReader {
                     None => pos,
                     Some(p) => pos.min(p),
                 });
-                break;
             }
         }
 

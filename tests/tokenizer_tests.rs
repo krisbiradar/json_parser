@@ -1,6 +1,6 @@
-use json_parser::core::token::Token;
-use json_parser::core::tokentype::TokenType;
-use json_parser::lexer::tokenizer::Tokenizer;
+use parse_light::core::token::Token;
+use parse_light::core::tokentype::TokenType;
+use parse_light::lexer::tokenizer::Tokenizer;
 
 // Helper to collect tokens using the Iterator interface
 fn tokenize(json: &str) -> Vec<Token> {
